@@ -75,7 +75,7 @@ export default function LoginPage() {
 function LoginButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" aria-disabled={pending}>
+    <Button type="submit" className="w-full" aria-disabled={pending} suppressHydrationWarning>
       {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In</>}
     </Button>
   );
