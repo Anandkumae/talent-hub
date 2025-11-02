@@ -4,25 +4,46 @@
 import { aiResumeMatcher } from '@/ai/flows/ai-resume-matcher';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { getAuth } from 'firebase/auth/web-extension';
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { initializeFirebase } from '@/firebase';
 
-// Mock authentication
 export async function authenticate(
   prevState: string | undefined,
   formData: FormData,
 ) {
   try {
+    const { auth } = initializeFirebase();
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    // In a real app, you'd validate credentials here
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log('User authenticated');
+    await signInWithEmailAndPassword(auth, email, password);
   } catch (error) {
-     if (error.type === 'CredentialsSignin') {
-      return 'Invalid credentials.';
+     if (error.code) {
+        switch (error.code) {
+          case 'auth/user-not-found':
+            return 'Invalid email address. Please try again.';
+          case 'auth/wrong-password':
+            return 'Invalid password. Please try again.';
+          case 'auth/invalid-credential':
+            return 'Invalid credentials. Please try again.';
+          default:
+            return `An error occurred: ${error.message}`;
+        }
     }
-    // throw error;
+    return 'An unexpected error occurred. Please try again.';
+  }
+  redirect('/dashboard');
+}
+
+export async function signInWithGoogle() {
+  try {
+    const { auth } = initializeFirebase();
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch (error) {
+    console.error('Google sign-in error:', error);
+    // The user might close the popup, which can be an error.
+    // We can redirect them back to the login page with an error message.
+    return redirect('/login?error=google-signin-failed');
   }
   redirect('/dashboard');
 }
