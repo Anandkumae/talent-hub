@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useState } from 'react';
+import { useActionState, useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
 import { authenticate, handleSignInWithProvider } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
@@ -13,20 +13,47 @@ import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FaGoogle, FaGithub, FaTwitter } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
   const [socialError, setSocialError] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam) {
+      setSocialError('Sign-in failed. Please try again.');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, isUserLoading, router]);
 
   const onSocialLogin = async (provider: 'google' | 'github' | 'twitter') => {
     setSocialError(null);
     const result = await handleSignInWithProvider(provider);
     if (result?.error) {
-      setSocialError('Sign-in failed. Please try again.');
+      setSocialError(result.error);
     }
+    // onAuthStateChanged will handle the redirect on success
   };
 
   const finalErrorMessage = errorMessage || socialError;
+
+  if (isUserLoading || user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-muted/40">
+            <p>Loading...</p>
+        </div>
+    )
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
