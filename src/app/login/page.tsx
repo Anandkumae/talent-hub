@@ -17,16 +17,6 @@ import { useUser, useAuth, useFirestore } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, type Auth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
-// Moved outside to prevent re-creation on every render
-const setupRecaptcha = (auth: Auth) => {
-  return new RecaptchaVerifier(auth, 'recaptcha-container', {
-    'size': 'invisible',
-    'callback': (response: any) => {
-      // reCAPTCHA solved, allow signInWithPhoneNumber.
-    }
-  });
-}
-
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -41,11 +31,16 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
-
+  const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (auth && !recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = setupRecaptcha(auth);
+    if (auth && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+            'size': 'invisible',
+            'callback': (response: any) => {
+              // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
     }
   }, [auth]);
 
@@ -157,7 +152,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
-      <div id="recaptcha-container" suppressHydrationWarning></div>
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="inline-flex justify-center items-center bg-primary/10 text-primary rounded-lg p-3 mb-4 w-fit mx-auto">
@@ -214,7 +209,7 @@ export default function LoginPage() {
                 <Label htmlFor="otp">Verification Code</Label>
                 <div className="flex gap-2">
                   <Input 
-                    id="otp" _
+                    id="otp" 
                     name="otp" 
                     type="text" 
                     placeholder="Enter OTP" 
