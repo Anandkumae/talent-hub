@@ -3,7 +3,7 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
-import { authenticate } from '@/lib/actions';
+import { authenticate, createUserInFirestore } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,8 @@ export default function LoginPage() {
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
       if (user && firestore) {
+        // Ensure user document is created before redirecting
+        await createUserInFirestore(user);
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -39,7 +41,8 @@ export default function LoginPage() {
             router.push('/my-applications');
           }
         } else {
-          // If user doc doesn't exist, default to non-admin view
+          // If user doc still doesn't exist, default to non-admin view
+          // This might happen if firestore write is slow
           router.push('/my-applications');
         }
       }
@@ -73,8 +76,9 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged in the provider will handle the redirect
+      const result = await signInWithPopup(auth, provider);
+      await createUserInFirestore(result.user);
+      // onAuthStateChanged in the provider will handle the redirect via useEffect
     } catch (error: any) {
       console.error('Social Sign-in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {
