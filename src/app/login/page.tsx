@@ -3,7 +3,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { authenticate, signInWithGoogle } from '@/lib/actions';
+import { authenticate, signInWithGoogle, signInWithGithub, signInWithTwitter } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Briefcase, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FaGoogle } from 'react-icons/fa';
+import { FaGoogle, FaGithub, FaTwitter } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
@@ -31,11 +31,11 @@ export default function LoginPage() {
           <form action={dispatch} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="m@example.com" required />
+              <Input id="email" name="email" type="email" placeholder="m@example.com" required suppressHydrationWarning />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+              <Input id="password" name="password" type="password" required suppressHydrationWarning />
             </div>
             
             <LoginButton />
@@ -55,12 +55,23 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
-           <form action={signInWithGoogle}>
-              <Button variant="outline" className="w-full" suppressHydrationWarning>
-                <FaGoogle className="mr-2 h-4 w-4" />
-                Sign in with Google
-              </Button>
-            </form>
+          <div className="grid grid-cols-3 gap-2">
+             <form action={signInWithGoogle}>
+                <Button variant="outline" className="w-full" suppressHydrationWarning>
+                  <FaGoogle className="h-4 w-4" />
+                </Button>
+              </form>
+               <form action={signInWithGithub}>
+                <Button variant="outline" className="w-full" suppressHydrationWarning>
+                  <FaGithub className="h-4 w-4" />
+                </Button>
+              </form>
+               <form action={signInWithTwitter}>
+                <Button variant="outline" className="w-full" suppressHydrationWarning>
+                  <FaTwitter className="h-4 w-4" />
+                </Button>
+              </form>
+          </div>
             {errorMessage && (
               <Alert variant="destructive" className="mt-4">
                 <AlertDescription>{errorMessage}</AlertDescription>

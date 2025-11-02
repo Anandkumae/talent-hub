@@ -167,7 +167,10 @@
     "providers": [
       "password",
       "anonymous",
-      "google.com"
+      "google.com",
+      "phone",
+      "github.com",
+      "twitter.com"
     ]
   },
   "firestore": {

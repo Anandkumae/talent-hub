@@ -4,7 +4,7 @@
 import { aiResumeMatcher } from '@/ai/flows/ai-resume-matcher';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, GithubAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
 import { initializeFirebase } from '@/firebase';
 
 export async function authenticate(
@@ -34,18 +34,33 @@ export async function authenticate(
   redirect('/dashboard');
 }
 
-export async function signInWithGoogle() {
+async function handleSignInWithProvider(provider: GoogleAuthProvider | GithubAuthProvider | TwitterAuthProvider) {
   try {
     const { auth } = initializeFirebase();
-    const provider = new GoogleAuthProvider();
     await signInWithPopup(auth, provider);
   } catch (error) {
-    console.error('Google sign-in error:', error);
+    console.error('Sign-in error:', error);
     // The user might close the popup, which can be an error.
     // We can redirect them back to the login page with an error message.
-    return redirect('/login?error=google-signin-failed');
+    return redirect(`/login?error=${provider.providerId}-signin-failed`);
   }
   redirect('/dashboard');
+}
+
+
+export async function signInWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  return handleSignInWithProvider(provider);
+}
+
+export async function signInWithGithub() {
+  const provider = new GithubAuthProvider();
+  return handleSignInWithProvider(provider);
+}
+
+export async function signInWithTwitter() {
+  const provider = new TwitterAuthProvider();
+  return handleSignInWithProvider(provider);
 }
 
 
