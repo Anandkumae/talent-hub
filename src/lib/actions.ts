@@ -4,9 +4,8 @@
 
 import { aiResumeMatcher } from '@/ai/flows/ai-resume-matcher';
 import { z } from 'zod';
-import { redirect } from 'next/navigation';
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, GithubAuthProvider, TwitterAuthProvider, signInWithPopup, type User } from 'firebase/auth';
 import { initializeFirebase } from '@/firebase';
+import { signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 
@@ -19,13 +18,14 @@ export async function createUserInFirestore(user: User) {
 
   if (!userDoc.exists()) {
     // New user, create a document for them
-    const { uid, email, displayName } = user;
+    const { uid, email, displayName, phoneNumber } = user;
     const isAdmin = email === 'ramashankarsingh841@gmail.com';
+    const name = displayName || email || phoneNumber;
 
     try {
       await setDoc(userRef, {
         id: uid,
-        name: displayName || email,
+        name: name,
         email: email,
         role: isAdmin ? 'Admin' : 'User',
         department: 'N/A',
@@ -61,20 +61,7 @@ export async function authenticate(
     }
     return 'An unexpected error occurred. Please try again.';
   }
-  // This redirect will be handled by the effect on the page
-  // redirect('/dashboard');
 }
-
-
-export async function handleSignInWithProvider(providerId: 'google' | 'github' | 'twitter') {
-  // This function is now designed to be called from the client,
-  // but since it's in a 'use server' file, we need a way for the client to trigger it
-  // without it executing fully on the server. The actual sign-in popup
-  // must happen on the client. The page itself will handle this.
-  // For now, we will leave it but the logic is moved to the client component.
-  return { error: 'This action should be handled on the client.' };
-}
-
 
 const MatcherSchema = z.object({
   jobDescription: z.string().min(100, 'Job description must be at least 100 characters.'),

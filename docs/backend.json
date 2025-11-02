@@ -168,9 +168,7 @@
       "password",
       "anonymous",
       "google.com",
-      "phone",
-      "github.com",
-      "twitter.com"
+      "phone"
     ]
   },
   "firestore": {

@@ -8,28 +8,45 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Briefcase, LogIn } from 'lucide-react';
+import { Briefcase, LogIn, Phone } from 'lucide-react';
 import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { FaGoogle, FaGithub, FaTwitter } from 'react-icons/fa';
+import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { GoogleAuthProvider, GithubAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
-  const [socialError, setSocialError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
 
+  const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  
+  // Invisible reCAPTCHA container
+  useEffect(() => {
+    if (auth && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        }
+      });
+    }
+  }, [auth]);
+
+
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
       if (user && firestore) {
-        // Ensure user document is created before redirecting
         await createUserInFirestore(user);
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
@@ -41,8 +58,6 @@ export default function LoginPage() {
             router.push('/my-applications');
           }
         } else {
-          // If user doc still doesn't exist, default to non-admin view
-          // This might happen if firestore write is slow
           router.push('/my-applications');
         }
       }
@@ -53,45 +68,76 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router, firestore]);
 
-  const onSocialLogin = async (providerId: 'google' | 'github' | 'twitter') => {
+  const onSocialLogin = async (providerId: 'google') => {
     if (!auth) {
-        setSocialError('Authentication service is not available. Please try again later.');
+        setAuthError('Authentication service is not available. Please try again later.');
         return;
     }
-    setSocialError(null);
+    setAuthError(null);
     let provider;
     switch (providerId) {
       case 'google':
         provider = new GoogleAuthProvider();
         break;
-      case 'github':
-        provider = new GithubAuthProvider();
-        break;
-      case 'twitter':
-        provider = new TwitterAuthProvider();
-        break;
       default:
-        setSocialError('Invalid sign-in provider.');
+        setAuthError('Invalid sign-in provider.');
         return;
     }
 
     try {
       const result = await signInWithPopup(auth, provider);
       await createUserInFirestore(result.user);
-      // onAuthStateChanged in the provider will handle the redirect via useEffect
     } catch (error: any) {
       console.error('Social Sign-in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {
-        setSocialError('Sign-in cancelled. Please try again.');
+        setAuthError('Sign-in cancelled. Please try again.');
       } else if (error.code === 'auth/account-exists-with-different-credential') {
-        setSocialError('An account already exists with the same email address but different sign-in credentials.');
+        setAuthError('An account already exists with the same email address but different sign-in credentials.');
       } else {
-        setSocialError(`Sign-in with ${providerId} failed. Please try again.`);
+        setAuthError(`Sign-in with ${providerId} failed. Please try again.`);
       }
     }
   };
 
-  const finalErrorMessage = errorMessage || socialError;
+  const handlePhoneSignIn = async () => {
+    setAuthError(null);
+    if (!auth) {
+      setAuthError('Authentication service not available.');
+      return;
+    }
+    if (!window.recaptchaVerifier) {
+      setAuthError('reCAPTCHA not initialized.');
+      return;
+    }
+
+    try {
+      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      setConfirmationResult(result);
+      setOtpSent(true);
+    } catch (error: any) {
+      console.error('Phone sign-in error:', error);
+      setAuthError('Failed to send OTP. Please check the phone number and try again.');
+    }
+  };
+
+  const handleOtpVerify = async () => {
+    setAuthError(null);
+    if (!confirmationResult) {
+      setAuthError('OTP not sent yet.');
+      return;
+    }
+
+    try {
+      const result = await confirmationResult.confirm(otp);
+      await createUserInFirestore(result.user);
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      setAuthError('Failed to verify OTP. Please try again.');
+    }
+  };
+
+
+  const finalErrorMessage = errorMessage || authError;
 
   if (isUserLoading || user) {
     return (
@@ -103,6 +149,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
+      <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="inline-flex justify-center items-center bg-primary/10 text-primary rounded-lg p-3 mb-4 w-fit mx-auto">
@@ -112,49 +159,82 @@ export default function LoginPage() {
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={dispatch} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="m@example.com" required />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+          <div className="space-y-4">
+            <form action={dispatch} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" placeholder="m@example.com" required suppressHydrationWarning />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" required suppressHydrationWarning />
+              </div>
+              <LoginButton />
+            </form>
+
+            <div className="relative">
+              <Separator />
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
             </div>
             
-            <LoginButton />
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="#">Forgot password?</Link>
-            </Button>
-          </form>
-
-          <div className="relative my-6">
-            <Separator />
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')} suppressHydrationWarning>
-               <FaGoogle className="h-4 w-4" />
-             </Button>
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('github')} suppressHydrationWarning>
-               <FaGithub className="h-4 w-4" />
-             </Button>
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('twitter')} suppressHydrationWarning>
-               <FaTwitter className="h-4 w-4" />
-             </Button>
-          </div>
-            {finalErrorMessage && (
-              <Alert variant="destructive" className="mt-4">
-                <AlertDescription>{finalErrorMessage}</AlertDescription>
-              </Alert>
+            {!otpSent ? (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone Number</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    id="phone" 
+                    name="phone" 
+                    type="tel" 
+                    placeholder="+1 555-555-5555" 
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required 
+                    suppressHydrationWarning 
+                  />
+                  <Button variant="outline" onClick={handlePhoneSignIn} suppressHydrationWarning>
+                    <Phone className="mr-2 h-4 w-4" /> Send Code
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="otp">Verification Code</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    id="otp" 
+                    name="otp" 
+                    type="text" 
+                    placeholder="Enter OTP" 
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                    required 
+                    suppressHydrationWarning 
+                  />
+                  <Button onClick={handleOtpVerify} suppressHydrationWarning>Verify</Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Sent OTP to {phone}. <Button variant="link" className="p-0 h-auto" onClick={() => setOtpSent(false)}>Change number?</Button>
+                </p>
+              </div>
             )}
+            
+            <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')} suppressHydrationWarning>
+              <FaGoogle className="mr-2 h-4 w-4" /> Sign in with Google
+            </Button>
+          </div>
+
+          {finalErrorMessage && (
+            <Alert variant="destructive" className="mt-4">
+              <AlertDescription>{finalErrorMessage}</AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -165,7 +245,13 @@ function LoginButton() {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" className="w-full" aria-disabled={pending} suppressHydrationWarning>
-      {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In</>}
+      {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In with Email</>}
     </Button>
   );
+}
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+  }
 }
