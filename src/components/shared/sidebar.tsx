@@ -11,6 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
   Briefcase,
