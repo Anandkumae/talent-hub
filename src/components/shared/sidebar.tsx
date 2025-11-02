@@ -1,3 +1,4 @@
+
 'use client';
 import React from 'react';
 import Link from 'next/link';
@@ -31,6 +32,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '../ui/button';
+import { useAuth, useUser } from '@/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
   {
@@ -57,6 +61,16 @@ const menuItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const auth = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    if(auth){
+      await signOut(auth);
+      router.push('/login');
+    }
+  };
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -93,18 +107,18 @@ export function AppSidebar() {
             <div className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-sidebar-accent">
               <Avatar className="h-8 w-8">
                 <AvatarImage
-                  src="https://picsum.photos/seed/user/200/200"
-                  alt="Admin User"
+                  src={user?.photoURL ?? "https://picsum.photos/seed/user/200/200"}
+                  alt={user?.displayName ?? "Admin User"}
                   data-ai-hint="person face"
                 />
-                <AvatarFallback>AU</AvatarFallback>
+                <AvatarFallback>{user?.email?.[0].toUpperCase() ?? 'AU'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
                 <span className="text-sm font-medium text-sidebar-foreground">
-                  Admin User
+                  {user?.displayName ?? 'Admin User'}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  admin@corp.com
+                  {user?.email ?? 'admin@corp.com'}
                 </span>
               </div>
             </div>
@@ -121,12 +135,10 @@ export function AppSidebar() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <Link href="/login">
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
-            </Link>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarFooter>

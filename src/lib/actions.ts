@@ -4,6 +4,8 @@
 import { aiResumeMatcher } from '@/ai/flows/ai-resume-matcher';
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth } from 'firebase/auth/web-extension';
 
 // Mock authentication
 export async function authenticate(
@@ -11,6 +13,8 @@ export async function authenticate(
   formData: FormData,
 ) {
   try {
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
     // In a real app, you'd validate credentials here
     await new Promise((resolve) => setTimeout(resolve, 1000));
     console.log('User authenticated');
@@ -18,7 +22,7 @@ export async function authenticate(
      if (error.type === 'CredentialsSignin') {
       return 'Invalid credentials.';
     }
-    throw error;
+    // throw error;
   }
   redirect('/dashboard');
 }
