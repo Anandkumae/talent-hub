@@ -14,21 +14,41 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FaGoogle, FaGithub, FaTwitter } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
-import { useUser, useAuth } from '@/firebase';
+import { useUser, useAuth, useFirestore } from '@/firebase';
 import { GoogleAuthProvider, GithubAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
   const [socialError, setSocialError] = useState<string | null>(null);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
-  const auth = useAuth(); // Get auth instance via hook
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   useEffect(() => {
-    if (!isUserLoading && user) {
-      router.push('/dashboard');
+    const checkUserRoleAndRedirect = async () => {
+      if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData.role === 'Admin' || userData.role === 'HR' || userData.role === 'Manager') {
+            router.push('/dashboard');
+          } else {
+            router.push('/my-applications');
+          }
+        } else {
+          // If user doc doesn't exist, default to non-admin view
+          router.push('/my-applications');
+        }
+      }
+    };
+
+    if (!isUserLoading) {
+      checkUserRoleAndRedirect();
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, firestore]);
 
   const onSocialLogin = async (providerId: 'google' | 'github' | 'twitter') => {
     if (!auth) {

@@ -9,6 +9,7 @@ export const jobs: Job[] = [
     requirements: ['React', 'TypeScript', 'Next.js', 'Tailwind CSS'],
     status: 'Open',
     postedAt: '2024-05-01',
+    postedBy: 'admin-user-id',
   },
   {
     id: '2',
@@ -18,6 +19,7 @@ export const jobs: Job[] = [
     requirements: ['Agile', 'JIRA', 'Market Research'],
     status: 'Open',
     postedAt: '2024-05-10',
+    postedBy: 'admin-user-id',
   },
   {
     id: '3',
@@ -27,6 +29,7 @@ export const jobs: Job[] = [
     requirements: ['Figma', 'User Research', 'Prototyping'],
     status: 'Closed',
     postedAt: '2024-04-20',
+    postedBy: 'admin-user-id',
   },
     {
     id: '4',
@@ -36,6 +39,7 @@ export const jobs: Job[] = [
     requirements: ['Node.js', 'Express', 'MongoDB'],
     status: 'Open',
     postedAt: '2024-05-15',
+    postedBy: 'admin-user-id',
   },
     {
     id: '5',
@@ -45,6 +49,7 @@ export const jobs: Job[] = [
     requirements: ['Docker', 'Kubernetes', 'AWS'],
     status: 'Open',
     postedAt: '2024-05-18',
+    postedBy: 'admin-user-id',
   },
 ];
 
@@ -57,6 +62,7 @@ export const candidates: Candidate[] = [
     skills: ['React', 'TypeScript', 'Node.js'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '1',
+    userId: 'user-alice-id',
     status: 'Shortlisted',
     appliedAt: '2024-05-02',
   },
@@ -68,6 +74,7 @@ export const candidates: Candidate[] = [
     skills: ['Agile', 'Scrum', 'JIRA'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '2',
+    userId: 'user-bob-id',
     status: 'Interviewed',
     appliedAt: '2024-05-11',
   },
@@ -79,6 +86,7 @@ export const candidates: Candidate[] = [
     skills: ['Figma', 'Sketch', 'Adobe XD'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '3',
+    userId: 'user-charlie-id',
     status: 'Hired',
     appliedAt: '2024-04-22',
   },
@@ -90,6 +98,7 @@ export const candidates: Candidate[] = [
     skills: ['React', 'Next.js', 'GraphQL'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '1',
+    userId: 'user-diana-id',
     status: 'Applied',
     appliedAt: '2024-05-05',
   },
@@ -101,6 +110,7 @@ export const candidates: Candidate[] = [
     skills: ['Node.js', 'MongoDB', 'Express'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '4',
+    userId: 'user-ethan-id',
     status: 'Rejected',
     appliedAt: '2024-05-16',
   },
@@ -112,6 +122,7 @@ export const candidates: Candidate[] = [
     skills: ['Docker', 'AWS', 'Terraform'],
     resumeUrl: '/resume-placeholder.pdf',
     jobId: '5',
+    userId: 'user-fiona-id',
     status: 'Applied',
     appliedAt: '2024-05-20',
   },

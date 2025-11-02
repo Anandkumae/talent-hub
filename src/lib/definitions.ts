@@ -2,7 +2,7 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  role: 'Admin' | 'HR' | 'Manager' | 'Candidate';
+  role: 'Admin' | 'HR' | 'Manager' | 'User';
   avatarUrl: string;
 };
 
@@ -16,6 +16,7 @@ export type Job = {
   requirements: string[];
   status: JobStatus;
   postedAt: string;
+  postedBy: string;
 };
 
 export type CandidateStatus = 'Applied' | 'Shortlisted' | 'Interviewed' | 'Hired' | 'Rejected';
@@ -28,6 +29,7 @@ export type Candidate = {
   skills: string[];
   resumeUrl: string;
   jobId: string;
+  userId: string;
   status: CandidateStatus;
   appliedAt: string;
 };

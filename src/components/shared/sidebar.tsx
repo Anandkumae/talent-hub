@@ -1,6 +1,6 @@
 
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -10,33 +10,18 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
   Briefcase,
   Users,
   BrainCircuit,
-  Settings,
-  ChevronLeft,
-  LogOut,
-  User,
+  FileText
 } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '../ui/button';
-import { useAuth, useUser } from '@/firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { useAuth, useUser, useFirestore } from '@/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-const menuItems = [
+const adminMenuItems = [
   {
     href: '/dashboard',
     label: 'Dashboard',
@@ -59,23 +44,54 @@ const menuItems = [
   },
 ];
 
+const userMenuItems = [
+  {
+    href: '/my-applications',
+    label: 'My Applications',
+    icon: FileText,
+  },
+  {
+    href: '/jobs',
+    label: 'Browse Jobs',
+    icon: Briefcase,
+  }
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
-  const auth = useAuth();
   const { user } = useUser();
-  const router = useRouter();
+  const firestore = useFirestore();
+  const [menuItems, setMenuItems] = useState(userMenuItems);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
-  const handleSignOut = async () => {
-    if(auth){
-      await signOut(auth);
-      router.push('/login');
-    }
-  };
+  useEffect(() => {
+    const fetchUserRole = async () => {
+      if (user && firestore) {
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const role = userDoc.data()?.role;
+          setUserRole(role);
+          if (role === 'Admin' || role === 'HR' || role === 'Manager') {
+            setMenuItems(adminMenuItems);
+          } else {
+            setMenuItems(userMenuItems);
+          }
+        } else {
+            setMenuItems(userMenuItems);
+        }
+      } else {
+        setMenuItems(userMenuItems);
+      }
+    };
+
+    fetchUserRole();
+  }, [user, firestore]);
 
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader>
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href={userRole === 'Admin' || userRole === 'HR' ? "/dashboard" : "/my-applications"} className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="shrink-0">
             <Briefcase className="size-5 text-primary" />
           </Button>
@@ -101,47 +117,6 @@ export function AppSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
-      <SidebarFooter>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <div className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-sidebar-accent">
-              <Avatar className="h-8 w-8">
-                <AvatarImage
-                  src={user?.photoURL ?? "https://picsum.photos/seed/user/200/200"}
-                  alt={user?.displayName ?? "Admin User"}
-                  data-ai-hint="person face"
-                />
-                <AvatarFallback>{user?.email?.[0].toUpperCase() ?? 'AU'}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-medium text-sidebar-foreground">
-                  {user?.displayName ?? 'Admin User'}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {user?.email ?? 'admin@corp.com'}
-                </span>
-              </div>
-            </div>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="right" align="start" className="w-56">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="mr-2 h-4 w-4" />
-              <span>Settings</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarFooter>
     </Sidebar>
   );
 }
