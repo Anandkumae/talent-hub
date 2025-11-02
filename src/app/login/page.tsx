@@ -11,7 +11,6 @@ import { Label } from '@/components/ui/label';
 import { Briefcase, LogIn, Phone } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FaGoogle } from 'react-icons/fa';
-import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth, useFirestore } from '@/firebase';
 import { GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, type Auth } from 'firebase/auth';
@@ -249,11 +248,4 @@ function LoginButton() {
       {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In with Email</>}
     </Button>
   );
-}
-
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    grecaptcha?: any;
-  }
 }
