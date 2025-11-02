@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { authenticate, signInWithGoogle, signInWithGithub, signInWithTwitter } from '@/lib/actions';
+import { authenticate, handleSignInWithProvider } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,17 @@ import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
+  const [socialError, setSocialError] = useState<string | null>(null);
+
+  const onSocialLogin = async (provider: 'google' | 'github' | 'twitter') => {
+    setSocialError(null);
+    const result = await handleSignInWithProvider(provider);
+    if (result?.error) {
+      setSocialError('Sign-in failed. Please try again.');
+    }
+  };
+
+  const finalErrorMessage = errorMessage || socialError;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
@@ -31,11 +42,11 @@ export default function LoginPage() {
           <form action={dispatch} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" placeholder="m@example.com" required suppressHydrationWarning />
+              <Input id="email" name="email" type="email" placeholder="m@example.com" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required suppressHydrationWarning />
+              <Input id="password" name="password" type="password" required />
             </div>
             
             <LoginButton />
@@ -56,25 +67,19 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-             <form action={signInWithGoogle}>
-                <Button variant="outline" className="w-full" suppressHydrationWarning>
-                  <FaGoogle className="h-4 w-4" />
-                </Button>
-              </form>
-               <form action={signInWithGithub}>
-                <Button variant="outline" className="w-full" suppressHydrationWarning>
-                  <FaGithub className="h-4 w-4" />
-                </Button>
-              </form>
-               <form action={signInWithTwitter}>
-                <Button variant="outline" className="w-full" suppressHydrationWarning>
-                  <FaTwitter className="h-4 w-4" />
-                </Button>
-              </form>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')}>
+               <FaGoogle className="h-4 w-4" />
+             </Button>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('github')}>
+               <FaGithub className="h-4 w-4" />
+             </Button>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('twitter')}>
+               <FaTwitter className="h-4 w-4" />
+             </Button>
           </div>
-            {errorMessage && (
+            {finalErrorMessage && (
               <Alert variant="destructive" className="mt-4">
-                <AlertDescription>{errorMessage}</AlertDescription>
+                <AlertDescription>{finalErrorMessage}</AlertDescription>
               </Alert>
             )}
         </CardContent>
@@ -86,7 +91,7 @@ export default function LoginPage() {
 function LoginButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" aria-disabled={pending} suppressHydrationWarning>
+    <Button type="submit" className="w-full" aria-disabled={pending}>
       {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In</>}
     </Button>
   );

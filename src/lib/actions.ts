@@ -34,33 +34,49 @@ export async function authenticate(
   redirect('/dashboard');
 }
 
-async function handleSignInWithProvider(provider: GoogleAuthProvider | GithubAuthProvider | TwitterAuthProvider) {
+export async function handleSignInWithProvider(providerId: 'google' | 'github' | 'twitter') {
+  'use client';
+  let provider;
+  switch (providerId) {
+    case 'google':
+      provider = new GoogleAuthProvider();
+      break;
+    case 'github':
+      provider = new GithubAuthProvider();
+      break;
+    case 'twitter':
+      provider = new TwitterAuthProvider();
+      break;
+    default:
+      throw new Error('Invalid provider');
+  }
+
   try {
     const { auth } = initializeFirebase();
     await signInWithPopup(auth, provider);
   } catch (error) {
     console.error('Sign-in error:', error);
-    // The user might close the popup, which can be an error.
-    // We can redirect them back to the login page with an error message.
-    return redirect(`/login?error=${provider.providerId}-signin-failed`);
+    // This error will be caught client-side, we can't redirect from here.
+    // The page will handle showing an error.
+    return { error: `${providerId}.com-signin-failed`};
   }
-  redirect('/dashboard');
+ // On success, the onAuthStateChanged listener will handle the redirect.
 }
 
 
 export async function signInWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  return handleSignInWithProvider(provider);
+  'use server';
+  redirect('/dashboard');
 }
 
 export async function signInWithGithub() {
-  const provider = new GithubAuthProvider();
-  return handleSignInWithProvider(provider);
+  'use server';
+  redirect('/dashboard');
 }
 
 export async function signInWithTwitter() {
-  const provider = new TwitterAuthProvider();
-  return handleSignInWithProvider(provider);
+  'use server';
+  redirect('/dashboard');
 }
 
 
