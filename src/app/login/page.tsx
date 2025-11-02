@@ -214,7 +214,7 @@ export default function LoginPage() {
                 <Label htmlFor="otp">Verification Code</Label>
                 <div className="flex gap-2">
                   <Input 
-                    id="otp" 
+                    id="otp" _
                     name="otp" 
                     type="text" 
                     placeholder="Enter OTP" 
