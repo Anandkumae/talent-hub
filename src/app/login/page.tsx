@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useActionState, useState, useEffect } from 'react';
+import { useActionState, useState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { authenticate, createUserInFirestore } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Briefcase, LogIn, Phone } from 'lucide-react';
-import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
@@ -31,17 +30,7 @@ export default function LoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [otpSent, setOtpSent] = useState(false);
   
-  // Invisible reCAPTCHA container
-  useEffect(() => {
-    if (auth && !window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        }
-      });
-    }
-  }, [auth]);
+  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
 
   useEffect(() => {
@@ -100,13 +89,30 @@ export default function LoginPage() {
     }
   };
 
+  const setupRecaptcha = () => {
+    if (!auth) {
+        setAuthError('Authentication service not available.');
+        return;
+    }
+    if (!recaptchaVerifierRef.current) {
+        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response: any) => {
+                // reCAPTCHA solved, allow signInWithPhoneNumber.
+            }
+        });
+        recaptchaVerifierRef.current = verifier;
+    }
+    return recaptchaVerifierRef.current;
+  }
+
   const handlePhoneSignIn = async () => {
     setAuthError(null);
     if (!auth) {
       setAuthError('Authentication service not available.');
       return;
     }
-    const verifier = window.recaptchaVerifier;
+    const verifier = setupRecaptcha();
     if (!verifier) {
       setAuthError('reCAPTCHA not initialized. Please wait a moment and try again.');
       return;
@@ -118,10 +124,11 @@ export default function LoginPage() {
       setOtpSent(true);
     } catch (error: any) {
       console.error('Phone sign-in error:', error);
-      // Reset reCAPTCHA
-       if (window.grecaptcha && verifier.widgetId !== undefined) {
-         window.grecaptcha.reset(verifier.widgetId);
-       }
+      verifier.render().then((widgetId) => {
+        if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
+          grecaptcha.reset(widgetId);
+        }
+      });
       setAuthError('Failed to send OTP. Please check the phone number and try again.');
     }
   };
@@ -155,7 +162,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
-      <div id="recaptcha-container"></div>
+      <div id="recaptcha-container" suppressHydrationWarning></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="inline-flex justify-center items-center bg-primary/10 text-primary rounded-lg p-3 mb-4 w-fit mx-auto">
@@ -260,3 +267,5 @@ declare global {
     grecaptcha?: any;
   }
 }
+
+    
