@@ -1,13 +1,13 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState, useEffect, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { getMatchScore, type MatcherState } from '@/lib/actions';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Bot, RefreshCw } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useEffect, useState } from 'react';
 
 const initialState: MatcherState = {
   message: null,
@@ -16,7 +16,7 @@ const initialState: MatcherState = {
 };
 
 export function MatcherForm() {
-  const [state, dispatch] = useFormState(getMatchScore, initialState);
+  const [state, dispatch] = useActionState(getMatchScore, initialState);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
