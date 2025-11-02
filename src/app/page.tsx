@@ -1,6 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Briefcase, Zap, Users, BarChart } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 export default function Home() {
   return (
@@ -103,6 +109,57 @@ export default function Home() {
                   reporting tools.
                 </p>
               </div>
+            </div>
+          </div>
+        </section>
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">
+                  FAQ
+                </div>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+                  Frequently Asked Questions
+                </h2>
+                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  Have questions? We've got answers. If you can't find what you're looking for, feel free to contact us.
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto max-w-3xl py-12">
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="item-1">
+                  <AccordionTrigger>What is the Internal Talent Hub?</AccordionTrigger>
+                  <AccordionContent>
+                    The Internal Talent Hub is a comprehensive platform designed to streamline your internal recruitment process. It allows you to post jobs, manage a centralized pool of internal candidates, and leverage AI to find the best fit for your open roles, helping you build your future workforce from within.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-2">
+                  <AccordionTrigger>How does the AI-powered matching work?</AccordionTrigger>
+                  <AccordionContent>
+                    Our advanced AI analyzes the job description and compares it against the text of candidate resumes. It calculates a match score based on skills, experience, and other relevant criteria, allowing you to quickly identify the most qualified internal applicants for a position.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-3">
+                  <AccordionTrigger>Can I track the status of candidates through the hiring process?</AccordionTrigger>
+                  <AccordionContent>
+                    Yes! The platform provides a clear and intuitive dashboard to track each candidate's status, from "Applied" and "Shortlisted" to "Interviewed" and "Hired". This helps you and your team stay organized and informed at every stage of the hiring pipeline.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-4">
+                  <AccordionTrigger>How can I create and manage job postings?</AccordionTrigger>
+                  <AccordionContent>
+                    Posting a new job is simple. Just navigate to the "Jobs" section and click "Create Job". You can fill in the title, department, description, and requirements. All your job postings can be viewed, edited, or archived from the same central location.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="item-5">
+                  <AccordionTrigger>Is my data and are my employees' resumes secure?</AccordionTrigger>
+                  <AccordionContent>
+                    Absolutely. We prioritize the security and privacy of your company's and employees' data. The platform is built with robust security measures to ensure that all information, including resumes and candidate details, is kept confidential and accessed only by authorized personnel.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
             </div>
           </div>
         </section>
