@@ -14,8 +14,18 @@ import { FaGoogle } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
 import { useRouter } from 'next/navigation';
 import { useUser, useAuth, useFirestore } from '@/firebase';
-import { GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult, type Auth } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
+
+// Moved outside to prevent re-creation on every render
+const setupRecaptcha = (auth: Auth) => {
+  return new RecaptchaVerifier(auth, 'recaptcha-container', {
+    'size': 'invisible',
+    'callback': (response: any) => {
+      // reCAPTCHA solved, allow signInWithPhoneNumber.
+    }
+  });
+}
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
@@ -32,6 +42,12 @@ export default function LoginPage() {
   
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
+
+  useEffect(() => {
+    if (auth && !recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current = setupRecaptcha(auth);
+    }
+  }, [auth]);
 
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
@@ -89,30 +105,13 @@ export default function LoginPage() {
     }
   };
 
-  const setupRecaptcha = () => {
-    if (!auth) {
-        setAuthError('Authentication service not available.');
-        return;
-    }
-    if (!recaptchaVerifierRef.current) {
-        const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-            'size': 'invisible',
-            'callback': (response: any) => {
-                // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
-        recaptchaVerifierRef.current = verifier;
-    }
-    return recaptchaVerifierRef.current;
-  }
-
   const handlePhoneSignIn = async () => {
     setAuthError(null);
     if (!auth) {
       setAuthError('Authentication service not available.');
       return;
     }
-    const verifier = setupRecaptcha();
+    const verifier = recaptchaVerifierRef.current;
     if (!verifier) {
       setAuthError('reCAPTCHA not initialized. Please wait a moment and try again.');
       return;
@@ -122,13 +121,9 @@ export default function LoginPage() {
       const result = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(result);
       setOtpSent(true);
-    } catch (error: any) {
+    } catch (error: any)
+    {
       console.error('Phone sign-in error:', error);
-      verifier.render().then((widgetId) => {
-        if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
-          grecaptcha.reset(widgetId);
-        }
-      });
       setAuthError('Failed to send OTP. Please check the phone number and try again.');
     }
   };
@@ -186,7 +181,6 @@ export default function LoginPage() {
             </form>
 
             <div className="relative">
-              <Separator />
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
               </div>
@@ -267,5 +261,3 @@ declare global {
     grecaptcha?: any;
   }
 }
-
-    
