@@ -16,55 +16,33 @@ export async function authenticate(
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     await signInWithEmailAndPassword(auth, email, password);
+    // Redirect is handled by the page's effect hook
   } catch (error) {
      if (error.code) {
         switch (error.code) {
           case 'auth/user-not-found':
-            return 'Invalid email address. Please try again.';
           case 'auth/wrong-password':
-            return 'Invalid password. Please try again.';
           case 'auth/invalid-credential':
-            return 'Invalid credentials. Please try again.';
+            return 'Invalid email or password. Please try again.';
           default:
             return `An error occurred: ${error.message}`;
         }
     }
     return 'An unexpected error occurred. Please try again.';
   }
-  redirect('/dashboard');
+  // This redirect will be handled by the effect on the page
+  // redirect('/dashboard');
 }
 
-export async function handleSignInWithProvider(providerId: 'google' | 'github' | 'twitter') {
-  'use client';
-  let provider;
-  switch (providerId) {
-    case 'google':
-      provider = new GoogleAuthProvider();
-      break;
-    case 'github':
-      provider = new GithubAuthProvider();
-      break;
-    case 'twitter':
-      provider = new TwitterAuthProvider();
-      break;
-    default:
-      return { error: 'Invalid provider' };
-  }
 
-  try {
-    const { auth } = initializeFirebase();
-    await signInWithPopup(auth, provider);
-    // onAuthStateChanged will handle the redirect on success
-    return {};
-  } catch (error) {
-    console.error('Sign-in error:', error);
-    // This error will be caught client-side, we can't redirect from here.
-    // The page will handle showing an error.
-    if (error.code === 'auth/popup-closed-by-user') {
-      return { error: 'Sign-in cancelled. Please try again.' };
-    }
-    return { error: `Sign-in with ${providerId} failed. Please try again.`};
-  }
+export async function handleSignInWithProvider(providerId: 'google' | 'github' | 'twitter') {
+  // This function is now designed to be called from the client,
+  // but since it's in a 'use server' file, we need a way for the client to trigger it
+  // without it executing fully on the server. The actual sign-in popup
+  // must happen on the client. The page itself will handle this.
+  // This function can be a placeholder or removed if client handles everything.
+  // For now, we will leave it but the logic is moved to the client component.
+  return { error: 'This action should be handled on the client.' };
 }
 
 

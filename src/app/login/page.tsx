@@ -3,7 +3,7 @@
 
 import { useActionState, useState, useEffect } from 'react';
 import { useFormStatus } from 'react-dom';
-import { authenticate, handleSignInWithProvider } from '@/lib/actions';
+import { authenticate } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,22 +13,16 @@ import Link from 'next/link';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FaGoogle, FaGithub, FaTwitter } from 'react-icons/fa';
 import { Separator } from '@/components/ui/separator';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useUser, useAuth } from '@/firebase';
+import { GoogleAuthProvider, GithubAuthProvider, TwitterAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export default function LoginPage() {
   const [errorMessage, dispatch] = useActionState(authenticate, undefined);
   const [socialError, setSocialError] = useState<string | null>(null);
-  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, isUserLoading } = useUser();
-
-  useEffect(() => {
-    const errorParam = searchParams.get('error');
-    if (errorParam) {
-      setSocialError('Sign-in failed. Please try again.');
-    }
-  }, [searchParams]);
+  const auth = useAuth(); // Get auth instance via hook
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -36,13 +30,41 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const onSocialLogin = async (provider: 'google' | 'github' | 'twitter') => {
-    setSocialError(null);
-    const result = await handleSignInWithProvider(provider);
-    if (result?.error) {
-      setSocialError(result.error);
+  const onSocialLogin = async (providerId: 'google' | 'github' | 'twitter') => {
+    if (!auth) {
+        setSocialError('Authentication service is not available. Please try again later.');
+        return;
     }
-    // onAuthStateChanged will handle the redirect on success
+    setSocialError(null);
+    let provider;
+    switch (providerId) {
+      case 'google':
+        provider = new GoogleAuthProvider();
+        break;
+      case 'github':
+        provider = new GithubAuthProvider();
+        break;
+      case 'twitter':
+        provider = new TwitterAuthProvider();
+        break;
+      default:
+        setSocialError('Invalid sign-in provider.');
+        return;
+    }
+
+    try {
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged in the provider will handle the redirect
+    } catch (error: any) {
+      console.error('Social Sign-in error:', error);
+      if (error.code === 'auth/popup-closed-by-user') {
+        setSocialError('Sign-in cancelled. Please try again.');
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        setSocialError('An account already exists with the same email address but different sign-in credentials.');
+      } else {
+        setSocialError(`Sign-in with ${providerId} failed. Please try again.`);
+      }
+    }
   };
 
   const finalErrorMessage = errorMessage || socialError;
@@ -50,9 +72,9 @@ export default function LoginPage() {
   if (isUserLoading || user) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-muted/40">
-            <p>Loading...</p>
+            <div className="animate-pulse">Loading...</div>
         </div>
-    )
+    );
   }
 
   return (
