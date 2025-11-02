@@ -67,13 +67,13 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')}>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')} suppressHydrationWarning>
                <FaGoogle className="h-4 w-4" />
              </Button>
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('github')}>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('github')} suppressHydrationWarning>
                <FaGithub className="h-4 w-4" />
              </Button>
-             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('twitter')}>
+             <Button variant="outline" className="w-full" onClick={() => onSocialLogin('twitter')} suppressHydrationWarning>
                <FaTwitter className="h-4 w-4" />
              </Button>
           </div>
@@ -91,7 +91,7 @@ export default function LoginPage() {
 function LoginButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" aria-disabled={pending}>
+    <Button type="submit" className="w-full" aria-disabled={pending} suppressHydrationWarning>
       {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In</>}
     </Button>
   );
