@@ -58,12 +58,13 @@ export default function LoginPage() {
             router.push('/my-applications');
           }
         } else {
+          // If doc doesn't exist, default to non-admin redirect
           router.push('/my-applications');
         }
       }
     };
 
-    if (!isUserLoading) {
+    if (!isUserLoading && user) {
       checkUserRoleAndRedirect();
     }
   }, [user, isUserLoading, router, firestore]);
@@ -105,17 +106,22 @@ export default function LoginPage() {
       setAuthError('Authentication service not available.');
       return;
     }
-    if (!window.recaptchaVerifier) {
-      setAuthError('reCAPTCHA not initialized.');
+    const verifier = window.recaptchaVerifier;
+    if (!verifier) {
+      setAuthError('reCAPTCHA not initialized. Please wait a moment and try again.');
       return;
     }
 
     try {
-      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
+      const result = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(result);
       setOtpSent(true);
     } catch (error: any) {
       console.error('Phone sign-in error:', error);
+      // Reset reCAPTCHA
+       if (window.grecaptcha && verifier.widgetId !== undefined) {
+         window.grecaptcha.reset(verifier.widgetId);
+       }
       setAuthError('Failed to send OTP. Please check the phone number and try again.');
     }
   };
@@ -149,7 +155,7 @@ export default function LoginPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-muted/40">
-      <div id="recaptcha-container" suppressHydrationWarning></div>
+      <div id="recaptcha-container"></div>
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <div className="inline-flex justify-center items-center bg-primary/10 text-primary rounded-lg p-3 mb-4 w-fit mx-auto">
@@ -163,11 +169,11 @@ export default function LoginPage() {
             <form action={dispatch} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="m@example.com" required suppressHydrationWarning />
+                <Input id="email" name="email" type="email" placeholder="m@example.com" required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required suppressHydrationWarning />
+                <Input id="password" name="password" type="password" required />
               </div>
               <LoginButton />
             </form>
@@ -196,9 +202,8 @@ export default function LoginPage() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required 
-                    suppressHydrationWarning 
                   />
-                  <Button variant="outline" onClick={handlePhoneSignIn} suppressHydrationWarning>
+                  <Button variant="outline" onClick={handlePhoneSignIn}>
                     <Phone className="mr-2 h-4 w-4" /> Send Code
                   </Button>
                 </div>
@@ -215,9 +220,8 @@ export default function LoginPage() {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
                     required 
-                    suppressHydrationWarning 
                   />
-                  <Button onClick={handleOtpVerify} suppressHydrationWarning>Verify</Button>
+                  <Button onClick={handleOtpVerify}>Verify</Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Sent OTP to {phone}. <Button variant="link" className="p-0 h-auto" onClick={() => setOtpSent(false)}>Change number?</Button>
@@ -225,7 +229,7 @@ export default function LoginPage() {
               </div>
             )}
             
-            <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')} suppressHydrationWarning>
+            <Button variant="outline" className="w-full" onClick={() => onSocialLogin('google')}>
               <FaGoogle className="mr-2 h-4 w-4" /> Sign in with Google
             </Button>
           </div>
@@ -244,7 +248,7 @@ export default function LoginPage() {
 function LoginButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" aria-disabled={pending} suppressHydrationWarning>
+    <Button type="submit" className="w-full" aria-disabled={pending}>
       {pending ? 'Logging in...' : <><LogIn className="mr-2 h-4 w-4" /> Log In with Email</>}
     </Button>
   );
@@ -253,5 +257,6 @@ function LoginButton() {
 declare global {
   interface Window {
     recaptchaVerifier?: RecaptchaVerifier;
+    grecaptcha?: any;
   }
 }
