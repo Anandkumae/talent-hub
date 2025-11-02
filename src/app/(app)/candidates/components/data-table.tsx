@@ -12,33 +12,47 @@ import {
 import {
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
+  type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
 import { useRouter } from 'next/navigation';
+import type { Candidate, Job } from '@/lib/definitions';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
-  data: TData[];
+  data: (TData & { jobTitle: string; id: string })[];
+  search: string;
 }
 
-export function CandidatesDataTable<TData extends {id: string}, TValue>({
-  columns,
-  data,
-}: DataTableProps<TData, TValue>) {
+export function CandidatesDataTable<
+  TData extends Candidate & { jobTitle: string; id: string },
+  TValue,
+>({ columns, data, search }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  );
   const router = useRouter();
+
+  React.useEffect(() => {
+    table.getColumn('name')?.setFilterValue(search);
+  }, [search]);
 
   const table = useReactTable({
     data,
     columns,
-    getCoreRowModel: getCoreRowModel(),
     onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     state: {
       sorting,
+      columnFilters,
     },
   });
 

@@ -4,8 +4,9 @@ import { CandidatesDataTable } from './components/data-table';
 import { candidates, jobs } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
+import { columns } from './components/columns';
 
-export default function CandidatesPage() {
+export default function CandidatesPage({ searchParams }: { searchParams: { search: string } }) {
   const data = candidates.map(c => ({
     ...c,
     jobTitle: jobs.find(j => j.id === c.jobId)?.title || 'N/A',
@@ -19,7 +20,7 @@ export default function CandidatesPage() {
           <Input placeholder="Search candidates..." className="pl-8 sm:w-[300px]"/>
         </div>
       </PageHeader>
-      <CandidatesDataTable data={data} />
+      <CandidatesDataTable columns={columns} data={data} search={searchParams.search} />
     </>
   );
 }
