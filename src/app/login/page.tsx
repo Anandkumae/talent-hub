@@ -35,6 +35,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (auth && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
+        // Ensure this runs only once
         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
             'size': 'invisible',
             'callback': (response: any) => {
