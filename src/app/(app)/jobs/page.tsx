@@ -19,14 +19,14 @@ export default function JobsPage() {
   const searchParams = useSearchParams();
   const search = searchParams.get('search') || '';
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
   
-  const { data: userData } = useDoc<UserData>(userDocRef);
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
   const userRole = userData?.role;
   const canCreateJobs = userRole === 'Admin' || userRole === 'HR';
 
@@ -35,7 +35,9 @@ export default function JobsPage() {
     return query(collection(firestore, 'jobs'));
   }, [firestore]);
 
-  const { data: jobs, isLoading } = useCollection<Job>(jobsQuery);
+  const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
+
+  const isLoading = isUserLoading || isUserDocLoading || areJobsLoading;
 
   const data = React.useMemo(() => {
     if (!jobs) return [];
@@ -57,14 +59,7 @@ export default function JobsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]"/>
             </div>
-             {canCreateJobs && (
-              <Button asChild>
-                <Link href="/jobs/create">
-                  <PlusCircle className="mr-2" />
-                  Create Job
-                </Link>
-              </Button>
-            )}
+             <Skeleton className="h-10 w-32" />
           </div>
         </PageHeader>
          <div className="space-y-2 rounded-lg border p-4">
