@@ -5,8 +5,8 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { jobs } from '@/lib/data';
 import { useMemo } from 'react';
+import type { Job } from '@/lib/definitions';
 
 const chartConfig = {
   jobs: {
@@ -15,8 +15,9 @@ const chartConfig = {
   },
 };
 
-export function JobsByDepartmentChart() {
+export function JobsByDepartmentChart({ jobs }: { jobs: Job[] }) {
   const data = useMemo(() => {
+    if (!jobs) return [];
     const departmentCounts = jobs.reduce((acc, job) => {
       acc[job.department] = (acc[job.department] || 0) + 1;
       return acc;
@@ -26,7 +27,7 @@ export function JobsByDepartmentChart() {
       department,
       jobs: count,
     }));
-  }, []);
+  }, [jobs]);
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[200px] w-full h-80">

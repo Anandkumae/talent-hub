@@ -1,20 +1,35 @@
-import { jobs } from '@/lib/data';
+'use client';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Briefcase, Calendar, Building, ListChecks, Info } from 'lucide-react';
+import { Building, Calendar, Info } from 'lucide-react';
 import { ApplyButton } from './components/apply-button';
-import { Separator } from '@/components/ui/separator';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import type { Job } from '@/lib/definitions';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function JobDetailPage({ params }: { params: { id: string } }) {
-  const job = jobs.find(j => j.id === params.id);
+  const firestore = useFirestore();
+  const jobRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'jobs', params.id);
+  }, [firestore, params.id]);
+  
+  const { data: job, isLoading } = useDoc<Job>(jobRef);
+  
+  if (isLoading) {
+    return <PageHeader title="Loading..." />;
+  }
   
   if (!job) {
     notFound();
   }
   
-  const postedDate = new Date(job.postedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+  const postedDate = job.postedAt?.seconds 
+    ? new Date(job.postedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) 
+    : 'N/A';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -31,7 +46,7 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
               <CardTitle>Job Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{job.description}</p>
+              <p className="text-muted-foreground whitespace-pre-wrap">{job.description}</p>
             </CardContent>
           </Card>
           <Card>

@@ -5,8 +5,8 @@ import {
   ChartContainer,
   ChartTooltipContent,
 } from '@/components/ui/chart';
-import { candidates } from '@/lib/data';
 import { useMemo } from 'react';
+import type { Candidate } from '@/lib/definitions';
 
 const COLORS = [
   'hsl(var(--chart-1))',
@@ -42,8 +42,9 @@ const chartConfig = {
   },
 };
 
-export function CandidatesByStatusChart() {
+export function CandidatesByStatusChart({ candidates }: { candidates: Candidate[] }) {
   const data = useMemo(() => {
+    if (!candidates) return [];
     const statusCounts = candidates.reduce((acc, candidate) => {
       acc[candidate.status] = (acc[candidate.status] || 0) + 1;
       return acc;
@@ -54,7 +55,7 @@ export function CandidatesByStatusChart() {
       value: count,
       fill: chartConfig[status as keyof typeof chartConfig]?.color,
     }));
-  }, []);
+  }, [candidates]);
   
   const totalCandidates = useMemo(() => data.reduce((acc, curr) => acc + curr.value, 0), [data]);
 
