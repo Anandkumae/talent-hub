@@ -3,7 +3,6 @@
 
 import { aiResumeMatcher } from '@/ai/flows/ai-resume-matcher';
 import { z } from 'zod';
-import { initializeFirebaseOnServer } from '@/firebase/server';
 import { signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
@@ -20,7 +19,7 @@ export async function createUserInFirestore(user: User) {
     // New user, create a document for them
     const { uid, email, displayName, phoneNumber } = user;
     const isAdmin = email === 'ramashankarsingh841@gmail.com';
-    const name = displayName || (email ? email.split('@')[0] : phoneNumber);
+    const name = displayName || (email ? email.split('@')[0] : phoneNumber) || 'New User';
 
     try {
       await setDoc(userRef, {
@@ -132,7 +131,7 @@ export type ApplyState = {
 };
 
 export async function applyForJob(prevState: ApplyState, formData: FormData) {
-  const { firestore } = await initializeFirebaseOnServer();
+  const { firestore } = initializeFirebase();
   const validatedFields = ApplySchema.safeParse({
     jobId: formData.get('jobId'),
     userId: formData.get('userId'),
