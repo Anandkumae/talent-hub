@@ -8,7 +8,7 @@ import { FirebaseClientProvider } from '@/firebase';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'Internal Talent Hub',
+  title: 'Leo Recruit',
   description: 'Internal Hiring and Resume Management Platform',
 };
 

@@ -99,7 +99,7 @@ export function AppSidebar() {
             <Briefcase className="size-5 text-primary" />
           </Button>
           <span className="text-lg font-semibold text-sidebar-foreground">
-            Talent Hub
+            Leo Recruit
           </span>
         </Link>
       </SidebarHeader>

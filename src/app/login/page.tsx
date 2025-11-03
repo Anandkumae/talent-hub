@@ -186,7 +186,7 @@ export default function LoginPage() {
           <div className="inline-flex justify-center items-center bg-primary/10 text-primary rounded-lg p-3 mb-4 w-fit mx-auto">
             <Briefcase className="h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl font-bold">Internal Talent Hub</CardTitle>
+          <CardTitle className="text-2xl font-bold">Leo Recruit</CardTitle>
           <CardDescription>Enter your credentials to access your account</CardDescription>
         </CardHeader>
         <CardContent>
