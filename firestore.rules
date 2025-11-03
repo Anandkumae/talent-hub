@@ -1,62 +1,8 @@
-/**
- * @file Firebase Security Rules for the Internal Talent Hub application.
- *
- * Core Philosophy:
- * This ruleset enforces a user-ownership model for user profiles and a public-read, owner-write model for jobs. Candidates are publicly accessible, enabling open applications.
- *
- * Data Structure:
- * - /users/{userId}: Stores user profile data, accessible only to the owning user.
- * - /jobs/{jobId}: Stores job postings, publicly readable, but only writable by the user who created the job.
- * - /candidates/{candidateId}: Stores candidate data, readable by HR/Admins, and by the user who owns the application.
- *
- * Key Security Decisions:
- * - User data is strictly private and only accessible to the authenticated user.
- * - Job postings are publicly visible, but modification is restricted to the job creator.
- * - Candidate data is protected. Only admins, HR, and the candidate themselves can see their application details.
- * - User listing is disallowed for privacy reasons.
- *
- * Denormalization for Authorization:
- * - The 'Job' entity includes a 'postedBy' field, which stores the user ID of the job creator. This denormalization is CRITICAL for securing write access to job postings.
- * - The 'Candidate' entity includes a 'userId' field, which stores the user ID of the applicant. This is CRITICAL for securing read/write access to candidate applications.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * @description Controls access to user profile data. Only the authenticated user can read or write their own profile.
-     */
-    match /users/{userId} {
-      allow read, update, delete: if isOwner(userId);
-      allow create: if isSignedIn();
-      allow list: if false; // Listing users is not permitted for privacy.
-    }
-
-    /**
-     * @description Controls access to job postings. Job postings are publicly readable, but only the creator can modify or delete them.
-     */
-    match /jobs/{jobId} {
-      allow read, list: if true;
-      allow create: if isSignedIn() && request.resource.data.postedBy == request.auth.uid;
-      allow update, delete: if isJobOwner(resource.data.postedBy);
-    }
-
-    /**
-     * @description Controls access to candidate data. Admins/HR can read all. Users can read/write their own.
-     */
-    match /candidates/{candidateId} {
-      // READ: Allow Admins/HR to read any candidate doc, and users to read their own.
-      allow read: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
-      // LIST: Allow Admins/HR to list all candidates. Regular users cannot list all candidates.
-      allow list: if isSignedIn() && isAdminOrHR();
-      // CREATE: Allow any signed-in user to create an application for themselves.
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      // UPDATE/DELETE: Allow Admins/HR to manage any candidate, and users to manage their own.
-      allow update, delete: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
-    }
-
     // --- Helper functions ---
-
     function isSignedIn() {
       return request.auth != null;
     }
@@ -72,19 +18,52 @@ service cloud.firestore {
     function isCandidateOwner(candidateUserId) {
       return isSignedIn() && request.auth.uid == candidateUserId;
     }
-    
+
     function getUserRole() {
-      // Use exists() to avoid errors on non-existent user docs (e.g., during signup)
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       if (exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
         return userDoc.data.role;
       }
-      return 'User'; // Default to least privileged role
+      return 'User';
     }
 
     function isAdminOrHR() {
-      let userRole = getUserRole();
-      return userRole == 'Admin' || userRole == 'HR';
+      let role = getUserRole();
+      return role == 'Admin' || role == 'HR';
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isSignedIn();
+      allow list: if false;
+    }
+
+    // --- JOBS ---
+    match /jobs/{jobId} {
+      // ✅ Anyone can view all jobs
+      allow read, list: if true;
+
+      // ✅ Only creator can post job
+      allow create: if isSignedIn() && request.resource.data.postedBy == request.auth.uid && (isAdminOrHR());
+
+      // ✅ Only creator or Admin/HR can update/delete jobs
+      allow update, delete: if isSignedIn() && (isJobOwner(resource.data.postedBy) || isAdminOrHR());
+    }
+
+    // --- CANDIDATES ---
+    match /candidates/{candidateId} {
+      // ✅ Read: Admins/HR see all; user sees their own applications
+      allow read: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
+
+      // ✅ Allow Admins/HR to list all candidates
+      allow list: if isSignedIn() && isAdminOrHR();
+
+      // ✅ Allow any signed-in user to apply (must set userId in data)
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+
+      // ✅ Allow update/delete by Admin/HR or the candidate themselves
+      allow update, delete: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
     }
   }
 }

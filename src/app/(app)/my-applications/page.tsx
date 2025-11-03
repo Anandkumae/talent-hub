@@ -9,6 +9,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Briefcase, AlertTriangle } from 'lucide-react';
 import type { Candidate, Job } from '@/lib/definitions';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 const statusStyles: Record<Candidate['status'], string> = {
     Applied: 'bg-blue-500/20 text-blue-700 border-blue-500/20 hover:bg-blue-500/30',
@@ -36,18 +38,18 @@ export default function MyApplicationsPage() {
   const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
 
   const getJobTitle = (jobId: string) => {
+    if (areJobsLoading) return 'Loading...';
     const job = jobs?.find(j => j.id === jobId);
     return job ? job.title : 'Unknown Job';
   };
   
   const formatDate = (timestamp: any) => {
-    if (timestamp && timestamp.toDate) {
-      return timestamp.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
     }
-    if (timestamp && timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
-    }
-    return 'N/A';
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
   }
 
   const overallLoading = isLoading || areJobsLoading;
@@ -66,9 +68,10 @@ export default function MyApplicationsPage() {
       {error && (
          <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
+            <AlertTitle>Error Loading Applications</AlertTitle>
             <AlertDescription>
                 Could not load your applications. This might be due to a permission issue. Please contact support if this persists.
+                <pre className="mt-2 text-xs bg-muted p-2 rounded">{error.message}</pre>
             </AlertDescription>
         </Alert>
       )}
@@ -94,10 +97,13 @@ export default function MyApplicationsPage() {
               </Card>
             ))
           ) : (
-             <Card className="flex flex-col items-center justify-center p-10">
+             <Card className="flex flex-col items-center justify-center p-10 text-center">
                 <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
                 <CardTitle>No Applications Found</CardTitle>
-                <CardDescription className="mt-2">You haven't applied for any jobs yet.</CardDescription>
+                <CardDescription className="mt-2">You haven&apos;t applied for any jobs yet.</CardDescription>
+                <Button asChild className="mt-4">
+                    <Link href="/jobs">Browse Jobs</Link>
+                </Button>
             </Card>
           )}
         </div>
