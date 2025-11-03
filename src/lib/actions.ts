@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
+import { initializeFirebaseOnServer } from '@/firebase/server';
 
 
 export async function createUserInFirestore(user: User) {
@@ -131,7 +132,7 @@ export type ApplyState = {
 };
 
 export async function applyForJob(prevState: ApplyState, formData: FormData) {
-  const { firestore } = initializeFirebase();
+  const { firestore } = await initializeFirebaseOnServer();
   const validatedFields = ApplySchema.safeParse({
     jobId: formData.get('jobId'),
     userId: formData.get('userId'),
