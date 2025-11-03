@@ -16,24 +16,31 @@ export async function createUserInFirestore(user: User) {
   const userRef = doc(firestore, 'users', user.uid);
   const userDoc = await getDoc(userRef);
 
+  // Only create the document if it doesn't already exist.
   if (!userDoc.exists()) {
-    // New user, create a document for them
     const { uid, email, displayName, phoneNumber } = user;
+    
+    // Assign 'Admin' role if the email matches, otherwise default to 'User'.
     const isAdmin = email === 'ramashankarsingh841@gmail.com';
+    const role = isAdmin ? 'Admin' : 'User';
+
+    // Create a sensible default name if displayName is not available.
     const name = displayName || (email ? email.split('@')[0] : '') || phoneNumber || 'New User';
 
     try {
       await setDoc(userRef, {
         id: uid,
         name: name,
-        email: email,
-        role: isAdmin ? 'Admin' : 'User',
-        department: 'N/A',
+        email: email || null,
+        phone: phoneNumber || null,
+        role: role,
+        department: 'N/A', // Default department
         createdAt: serverTimestamp(),
       });
+      console.log(`Created user document for ${uid} with role: ${role}`);
     } catch (error) {
-      console.error("Error creating user document:", error);
-      // We might want to handle this more gracefully
+      console.error("Error creating user document in Firestore:", error);
+      // This error should be handled, perhaps by logging to a more robust service.
     }
   }
 }
@@ -47,6 +54,7 @@ export async function authenticate(
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    // Ensure user document exists after sign-in
     await createUserInFirestore(userCredential.user);
   } catch (error) {
      if (error.code) {
