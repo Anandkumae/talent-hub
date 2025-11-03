@@ -45,8 +45,8 @@ service cloud.firestore {
      * @description Controls access to candidate data. Admins/HR can read all. Users can read/write their own.
      */
     match /candidates/{candidateId} {
-      allow read, list: if isSignedIn() && (isUserCandidate(request.auth.uid) || isAdminOrHR());
-      allow create: if isSignedIn();
+      allow read, list: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
     }
 
@@ -69,20 +69,17 @@ service cloud.firestore {
     }
     
     function getUserRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      // Use exists() to avoid errors on non-existent user docs (e.g., during signup)
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      if (exists(/databases/$(database)/documents/users/$(request.auth.uid))) {
+        return userDoc.data.role;
+      }
+      return 'User'; // Default to least privileged role
     }
 
     function isAdminOrHR() {
       let userRole = getUserRole();
       return userRole == 'Admin' || userRole == 'HR';
-    }
-
-    // This function checks if the current user has any candidate entries.
-    // It's used to allow users to see their own applications.
-    // Note: This is a query-based rule which can be less efficient at scale.
-    // A better approach might be to have a dedicated `/users/{userId}/applications` subcollection.
-    function isUserCandidate(userId) {
-        return exists(/databases/$(database)/documents/candidates?userId==userId);
     }
   }
 }

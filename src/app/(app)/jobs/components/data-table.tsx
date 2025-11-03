@@ -19,6 +19,7 @@ import {
   type ColumnFiltersState,
   type SortingState,
 } from '@tanstack/react-table';
+import { useRouter } from 'next/navigation';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -26,7 +27,7 @@ interface DataTableProps<TData, TValue> {
   search: string;
 }
 
-export function JobsDataTable<TData, TValue>({
+export function JobsDataTable<TData extends { id: string }, TValue>({
   columns,
   data,
   search,
@@ -35,6 +36,7 @@ export function JobsDataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
+  const router = useRouter();
 
   const table = useReactTable({
     data,
@@ -81,6 +83,8 @@ export function JobsDataTable<TData, TValue>({
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && 'selected'}
+                className="cursor-pointer"
+                onClick={() => router.push(`/jobs/${row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell key={cell.id}>
