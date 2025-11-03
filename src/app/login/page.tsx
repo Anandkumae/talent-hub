@@ -34,7 +34,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (auth && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
-        // Ensure this runs only once
         recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
             'size': 'invisible',
             'callback': (response: any) => {
@@ -47,7 +46,7 @@ export default function LoginPage() {
   useEffect(() => {
     const checkUserRoleAndRedirect = async () => {
       if (user && firestore) {
-        await createUserInFirestore(user);
+        // The createUserInFirestore function is already called on sign-in events
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -58,7 +57,9 @@ export default function LoginPage() {
             router.push('/my-applications');
           }
         } else {
-          // If doc doesn't exist, default to non-admin redirect
+          // If doc doesn't exist yet, it might be in the process of being created.
+          // A default redirect can be set here, or we can wait.
+          // For now, redirecting to a safe default page.
           router.push('/my-applications');
         }
       }
@@ -87,7 +88,7 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      await createUserInFirestore(result.user);
+      await createUserInFirestore(result.user); // ✅ Use result.user
     } catch (error: any) {
       console.error('Social Sign-in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {
@@ -132,7 +133,7 @@ export default function LoginPage() {
 
     try {
       const result = await confirmationResult.confirm(otp);
-      await createUserInFirestore(result.user);
+      await createUserInFirestore(result.user); // ✅ Use result.user
     } catch (error: any) {
       console.error('OTP verification error:', error);
       setAuthError('Failed to verify OTP. Please try again.');
