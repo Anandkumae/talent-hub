@@ -47,9 +47,8 @@ service cloud.firestore {
     match /candidates/{candidateId} {
       // READ: Allow Admins/HR to read any candidate doc, and users to read their own.
       allow read: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
-      // LIST: Allow any signed-in user to query the collection.
-      // Security is enforced by the queries themselves (e.g., where('userId', '==', auth.uid))
-      allow list: if isSignedIn();
+      // LIST: Allow Admins/HR to list all candidates. Users cannot list all candidates.
+      allow list: if isSignedIn() && isAdminOrHR();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isSignedIn() && (isCandidateOwner(resource.data.userId) || isAdminOrHR());
     }
