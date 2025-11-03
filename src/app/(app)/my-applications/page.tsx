@@ -1,4 +1,3 @@
-
 'use client';
 import React from 'react';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -43,7 +42,7 @@ export default function MyApplicationsPage() {
   
   const formatDate = (timestamp: any) => {
     if (timestamp && timestamp.seconds) {
-      return new Date(timestamp.seconds * 1000).toLocaleDateString();
+      return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
     }
     return 'N/A';
   }

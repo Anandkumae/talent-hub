@@ -1,43 +1,29 @@
-
 'use client';
 
 import React from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
-import { Button } from '@/components/ui/button';
-import { PlusCircle, Search } from 'lucide-react';
-import Link from 'next/link';
+import { Search } from 'lucide-react';
 import { JobsDataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
-import { collection, query, doc } from 'firebase/firestore';
-import type { Job, User as UserData } from '@/lib/definitions';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import type { Job } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateJobButton } from './components/create-job-button';
 
 export default function JobsPage() {
   const searchParams = useSearchParams();
   const search = searchParams.get('search') || '';
   const firestore = useFirestore();
-  const { user, isUserLoading } = useUser();
-
-  const userDocRef = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
   
-  const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
-  
-  const canCreateJobs = user && (userData?.role === 'Admin' || userData?.role === 'HR');
-
   const jobsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'jobs'));
   }, [firestore]);
 
   const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
-
-  const isLoading = areJobsLoading || isUserLoading;
 
   const data = React.useMemo(() => {
     if (!jobs) return [];
@@ -50,7 +36,7 @@ export default function JobsPage() {
     })
   }, [jobs]);
 
-  if (isLoading) {
+  if (areJobsLoading) {
     return (
       <>
         <PageHeader title="Job Postings">
@@ -78,16 +64,13 @@ export default function JobsPage() {
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]" defaultValue={search}/>
+            <Input 
+              placeholder="Search jobs..." 
+              className="pl-8 sm:w-[300px]" 
+              defaultValue={search}
+            />
           </div>
-          {canCreateJobs && (
-            <Button asChild>
-              <Link href="/jobs/create">
-                <PlusCircle className="mr-2" />
-                Create Job
-              </Link>
-            </Button>
-          )}
+          <CreateJobButton />
         </div>
       </PageHeader>
       <JobsDataTable columns={columns} data={data} search={search} />
