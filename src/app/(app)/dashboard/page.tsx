@@ -10,6 +10,7 @@ import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import type { Job, Candidate } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
@@ -26,7 +27,7 @@ export default function DashboardPage() {
   }, [firestore]);
   const { data: candidates, isLoading: candidatesLoading } = useCollection<Candidate>(candidatesQuery);
 
-  const isLoading = jobsLoading || candidatesLoading;
+  const isLoading = !firestore || jobsLoading || candidatesLoading;
   
   const totalJobs = jobs?.length || 0;
   const totalCandidates = candidates?.length || 0;

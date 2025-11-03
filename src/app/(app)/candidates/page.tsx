@@ -32,7 +32,7 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
     return query(collection(firestore, 'candidates'));
   }, [firestore, canListCandidates]);
 
-  const { data: candidates, isLoading: areCandidatesLoading, error } = useCollection<Candidate>(candidatesQuery);
+  const { data: candidates, isLoading: areCandidatesLoading } = useCollection<Candidate>(candidatesQuery);
 
   const jobsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
