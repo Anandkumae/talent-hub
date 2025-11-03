@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { User } from 'firebase/auth';
 import type { Job } from '@/lib/definitions';
-import { Upload, Send, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Send, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useFirebase } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes } from "firebase/storage";
 import { z } from 'zod';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -77,36 +77,45 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
     const { jobId, userId, name, email, phone, resume } = validatedFields.data;
 
     try {
-      // 1. Upload resume to Firebase Storage
       const storage = getStorage(firebaseApp);
       const storagePath = `resumes/${userId}/${resume.name}`;
-      const storageRef = ref(storage, storagePath);
-      await uploadBytes(storageRef, resume);
-
-      // 2. Add candidate document to Firestore
+      
+      // 1. Add candidate document to Firestore WITHOUT waiting
       const candidatesCollection = collection(firestore, 'candidates');
-      addDocumentNonBlocking(candidatesCollection, {
+      const docPromise = addDocumentNonBlocking(candidatesCollection, {
         jobId,
         userId,
         name,
         email,
         phone,
-        resumeUrl: storagePath, // Store the path to the file in Storage
+        resumeUrl: storagePath, // Optimistically store the future path
         skills: [],
         status: 'Applied',
         appliedAt: serverTimestamp(),
       });
       
+      // 2. Show success and close modal immediately
       setState({ message: 'Application submitted successfully!', success: true, errors: null });
-
       setTimeout(() => {
         setOpen(false);
       }, 2000);
+
+      // 3. Upload resume to Firebase Storage in the background
+      const storageRef = ref(storage, storagePath);
+      uploadBytes(storageRef, resume).then(() => {
+        console.log('Resume uploaded successfully in the background.');
+      }).catch(uploadError => {
+        console.error('Background resume upload failed:', uploadError);
+        // Here you might want to add more robust error handling,
+        // like updating the Firestore document to indicate the upload failed.
+      });
+
 
     } catch (error) {
       console.error('Error submitting application:', error);
       setState({ message: 'Failed to submit application. Please try again.', success: false, errors: null });
     } finally {
+      // The pending state is set to false almost immediately because we don't await.
       setPending(false);
     }
   };
@@ -116,7 +125,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
         <div className="flex flex-col items-center justify-center text-center p-8">
             <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
             <h3 className="text-xl font-semibold mb-2">Application Submitted!</h3>
-            <p className="text-sm text-muted-foreground">You will be redirected shortly.</p>
+            <p className="text-sm text-muted-foreground">Your application has been received. You can close this window.</p>
         </div>
     );
   }
