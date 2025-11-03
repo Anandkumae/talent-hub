@@ -44,7 +44,7 @@ service cloud.firestore {
       // ✅ Anyone can view all jobs
       allow read, list: if true;
 
-      // ✅ Only creator can post job
+      // ✅ Only creator can post job, if they are Admin or HR
       allow create: if isSignedIn() && request.resource.data.postedBy == request.auth.uid && (isAdminOrHR());
 
       // ✅ Only creator or Admin/HR can update/delete jobs

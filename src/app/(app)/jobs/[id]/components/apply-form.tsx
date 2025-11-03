@@ -92,7 +92,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
       const candidatesCollection = collection(firestore, 'candidates');
       addDocumentNonBlocking(candidatesCollection, {
         jobId,
-        userId,
+        userId, // CRITICAL: Ensure userId is included for security rules
         name,
         email,
         phone,

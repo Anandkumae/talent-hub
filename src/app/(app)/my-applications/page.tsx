@@ -21,11 +21,13 @@ const statusStyles: Record<Candidate['status'], string> = {
 };
 
 export default function MyApplicationsPage() {
-  const { user } = useUser();
+  const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
   const candidatesQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+    // This query uses `where` to filter by `userId`, which aligns with the security rules.
+    // It turns the operation into a `get` on documents the user is allowed to read.
     return query(collection(firestore, 'candidates'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
@@ -45,6 +47,7 @@ export default function MyApplicationsPage() {
   
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
+    // Safely handle both Firestore Timestamps and string dates
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     if (isNaN(date.getTime())) {
       return 'Invalid Date';
@@ -52,7 +55,7 @@ export default function MyApplicationsPage() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
   }
 
-  const overallLoading = isLoading || areJobsLoading;
+  const overallLoading = isUserLoading || isLoading || areJobsLoading;
 
   return (
     <>
