@@ -35,6 +35,13 @@ export default function MyApplicationsPage() {
     const job = jobs.find(j => j.id === jobId);
     return job ? job.title : 'Unknown Job';
   };
+  
+  const formatDate = (timestamp: any) => {
+    if (timestamp && timestamp.seconds) {
+      return new Date(timestamp.seconds * 1000).toLocaleDateString();
+    }
+    return 'N/A';
+  }
 
   return (
     <>
@@ -67,7 +74,7 @@ export default function MyApplicationsPage() {
                     <div>
                       <CardTitle className="text-xl">{getJobTitle(app.jobId)}</CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
-                        Applied on {new Date(app.appliedAt).toLocaleDateString()}
+                        Applied on {formatDate(app.appliedAt)}
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className={statusStyles[app.status]}>

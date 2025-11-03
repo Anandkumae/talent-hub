@@ -24,11 +24,14 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
 
   const data = React.useMemo(() => {
     if (!candidates) return [];
-    return candidates.map(c => ({
-      ...c,
-      jobTitle: jobs.find(j => j.id === c.jobId)?.title || 'N/A',
-      appliedAt: c.appliedAt ? new Date(c.appliedAt.seconds * 1000).toISOString() : new Date().toISOString(),
-    }));
+    return candidates.map(c => {
+      const appliedAtDate = c.appliedAt?.seconds ? new Date(c.appliedAt.seconds * 1000) : null;
+      return {
+        ...c,
+        jobTitle: jobs.find(j => j.id === c.jobId)?.title || 'N/A',
+        appliedAt: appliedAtDate ? appliedAtDate.toISOString() : new Date().toISOString(),
+      };
+    });
   }, [candidates]);
 
   if (isLoading) {
