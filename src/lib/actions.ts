@@ -7,6 +7,8 @@ import { signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { initializeFirebaseOnServer } from '@/firebase/server';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
 
 export async function createUserInFirestore(user: User) {
@@ -115,4 +117,63 @@ export async function getMatchScore(prevState: MatcherState, formData: FormData)
       errors: {},
     };
   }
+}
+
+const JobSchema = z.object({
+  title: z.string().min(1, 'Title is required.'),
+  department: z.string().min(1, 'Department is required.'),
+  description: z.string().min(1, 'Description is required.'),
+  requirements: z.string().min(1, 'Requirements are required.'),
+  postedBy: z.string(), // User ID
+});
+
+export type CreateJobState = {
+  errors?: {
+    title?: string[];
+    department?: string[];
+    description?: string[];
+    requirements?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createJob(userId: string, prevState: CreateJobState, formData: FormData) {
+  const validatedFields = JobSchema.safeParse({
+    title: formData.get('title'),
+    department: formData.get('department'),
+    description: formData.get('description'),
+    requirements: formData.get('requirements'),
+    postedBy: userId,
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid data. Please check the form and try again.',
+    };
+  }
+
+  const { title, department, description, requirements, postedBy } = validatedFields.data;
+  const requirementsArray = requirements.split('\n').filter(req => req.trim() !== '');
+
+  const { firestore } = await initializeFirebaseOnServer();
+
+  try {
+    const jobsCollection = collection(firestore, 'jobs');
+    await addDoc(jobsCollection, {
+      title,
+      department,
+      description,
+      requirements: requirementsArray,
+      postedBy,
+      status: 'Open',
+      postedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.error('Error creating job:', error);
+    return { message: 'Failed to create job posting. Please try again.' };
+  }
+
+  revalidatePath('/jobs');
+  redirect('/jobs');
 }
