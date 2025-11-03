@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,16 +10,25 @@ import Link from 'next/link';
 import { JobsDataTable } from './components/data-table';
 import { columns } from './components/columns';
 import { Input } from '@/components/ui/input';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
-import type { Job } from '@/lib/definitions';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, query, doc } from 'firebase/firestore';
+import type { Job, User as UserData } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
-
 
 export default function JobsPage() {
   const searchParams = useSearchParams();
   const search = searchParams.get('search') || '';
   const firestore = useFirestore();
+  const { user } = useUser();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  
+  const { data: userData } = useDoc<UserData>(userDocRef);
+  const userRole = userData?.role;
+  const canCreateJobs = userRole === 'Admin' || userRole === 'HR';
 
   const jobsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -47,12 +57,14 @@ export default function JobsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]"/>
             </div>
-            <Button asChild>
-              <Link href="/jobs/create">
-                <PlusCircle className="mr-2" />
-                Create Job
-              </Link>
-            </Button>
+             {canCreateJobs && (
+              <Button asChild>
+                <Link href="/jobs/create">
+                  <PlusCircle className="mr-2" />
+                  Create Job
+                </Link>
+              </Button>
+            )}
           </div>
         </PageHeader>
          <div className="space-y-2 rounded-lg border p-4">
@@ -73,12 +85,14 @@ export default function JobsPage() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]" defaultValue={search}/>
           </div>
-          <Button asChild>
-            <Link href="/jobs/create">
-              <PlusCircle className="mr-2" />
-              Create Job
-            </Link>
-          </Button>
+          {canCreateJobs && (
+            <Button asChild>
+              <Link href="/jobs/create">
+                <PlusCircle className="mr-2" />
+                Create Job
+              </Link>
+            </Button>
+          )}
         </div>
       </PageHeader>
       <JobsDataTable columns={columns} data={data} search={search} />
