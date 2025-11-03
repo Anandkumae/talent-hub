@@ -1,38 +1,44 @@
 'use client';
 
 import React from 'react';
-import { Briefcase, Users, CheckCircle, BarChart } from 'lucide-react';
+import { Briefcase, Users, CheckCircle, BarChart, ShieldAlert } from 'lucide-react';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatCard } from './components/stat-card';
 import { JobsByDepartmentChart } from './components/jobs-by-department-chart';
 import { CandidatesByStatusChart } from './components/candidates-by-status-chart';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
-import type { Job, Candidate } from '@/lib/definitions';
+import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
+import { collection, doc } from 'firebase/firestore';
+import type { Job, Candidate, User as UserData } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function DashboardPage() {
   const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
+  const userRole = userData?.role;
+  const canViewDashboard = userRole === 'Admin' || userRole === 'HR';
 
   const jobsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !canViewDashboard) return null;
     return collection(firestore, 'jobs');
-  }, [firestore]);
+  }, [firestore, canViewDashboard]);
   const { data: jobs, isLoading: jobsLoading } = useCollection<Job>(jobsQuery);
 
   const candidatesQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !canViewDashboard) return null;
     return collection(firestore, 'candidates');
-  }, [firestore]);
+  }, [firestore, canViewDashboard]);
   const { data: candidates, isLoading: candidatesLoading } = useCollection<Candidate>(candidatesQuery);
 
-  const isLoading = !firestore || jobsLoading || candidatesLoading;
-  
-  const totalJobs = jobs?.length || 0;
-  const totalCandidates = candidates?.length || 0;
-  const hiredCandidates = candidates?.filter(c => c.status === 'Hired').length || 0;
-  const openJobs = jobs?.filter(j => j.status === 'Open').length || 0;
+  const isLoading = isUserLoading || isUserDocLoading || (canViewDashboard && (jobsLoading || candidatesLoading));
   
   if (isLoading) {
     return (
@@ -51,6 +57,27 @@ export default function DashboardPage() {
         </>
     )
   }
+
+  // If we have determined the user is not an Admin/HR, show an access denied message.
+  if (!canViewDashboard) {
+     return (
+       <>
+         <PageHeader title="Dashboard" />
+         <Alert>
+           <ShieldAlert className="h-4 w-4" />
+           <AlertTitle>Access Denied</AlertTitle>
+           <AlertDescription>
+             You do not have permission to view the dashboard. This page is for Admin and HR personnel only.
+           </AlertDescription>
+         </Alert>
+       </>
+     );
+  }
+
+  const totalJobs = jobs?.length || 0;
+  const totalCandidates = candidates?.length || 0;
+  const hiredCandidates = candidates?.filter(c => c.status === 'Hired').length || 0;
+  const openJobs = jobs?.filter(j => j.status === 'Open').length || 0;
 
   return (
     <>
