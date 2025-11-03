@@ -1,35 +1,113 @@
 'use client';
 
-import { useActionState, useEffect, useRef } from 'react';
+import { useState, useRef, FormEvent } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { applyForJob, type ApplyState } from '@/lib/actions';
 import type { User } from 'firebase/auth';
 import type { Job } from '@/lib/definitions';
 import { Upload, Send, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { z } from 'zod';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
-const initialState: ApplyState = {
+const ApplySchema = z.object({
+  jobId: z.string(),
+  userId: z.string(),
+  name: z.string().min(1, "Name is required."),
+  email: z.string().email("Invalid email address."),
+  phone: z.string().min(1, "Phone number is required."),
+  resume: z.instanceof(File).refine(file => file.size > 0, "Resume is required."),
+});
+
+type FormState = {
+  errors: Record<string, string[]> | null;
+  message: string | null;
+  success: boolean;
+};
+
+const initialState: FormState = {
+  errors: null,
   message: null,
-  errors: {},
   success: false,
 };
 
 export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpen: (open: boolean) => void }) {
-  const [state, dispatch] = useActionState(applyForJob, initialState);
+  const [state, setState] = useState<FormState>(initialState);
+  const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (state.success) {
-      // Close dialog on successful submission
-      const timer = setTimeout(() => {
-        setOpen(false);
-      }, 2000); // Wait 2 seconds to show success message
-      return () => clearTimeout(timer);
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPending(true);
+    setState(initialState);
+    
+    if (!firestore) {
+      setState({ success: false, message: 'Database service is not available.', errors: null });
+      setPending(false);
+      return;
     }
-  }, [state.success, setOpen]);
+
+    const formData = new FormData(event.currentTarget);
+    const resumeFile = formData.get('resume');
+
+    const validatedFields = ApplySchema.safeParse({
+      jobId: job.id,
+      userId: user.uid,
+      name: formData.get('name'),
+      email: formData.get('email'),
+      phone: formData.get('phone'),
+      resume: resumeFile,
+    });
+
+    if (!validatedFields.success) {
+      setState({
+        errors: validatedFields.error.flatten().fieldErrors,
+        message: 'Invalid input. Please check the fields.',
+        success: false,
+      });
+      setPending(false);
+      return;
+    }
+    
+    const { jobId, userId, name, email, phone, resume } = validatedFields.data;
+
+    try {
+      // In a real app, you would upload the resume to Firebase Storage
+      // and get a download URL. For now, we'll use a placeholder.
+      const resumeUrl = `/resumes/${userId}/${resume.name}`;
+
+      const candidatesCollection = collection(firestore, 'candidates');
+
+      addDocumentNonBlocking(candidatesCollection, {
+        jobId,
+        userId,
+        name,
+        email,
+        phone,
+        resumeUrl,
+        skills: [], // Skills could be parsed from resume in a more advanced version
+        status: 'Applied',
+        appliedAt: serverTimestamp(),
+      });
+      
+      setState({ message: 'Application submitted successfully!', success: true, errors: null });
+
+      setTimeout(() => {
+        setOpen(false);
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      setState({ message: 'Failed to submit application. Please try again.', success: false, errors: null });
+    } finally {
+      setPending(false);
+    }
+  };
   
   if (state.success) {
      return (
@@ -42,10 +120,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
   }
 
   return (
-    <form ref={formRef} action={dispatch} className="grid gap-4 py-4">
-      <input type="hidden" name="jobId" value={job.id} />
-      <input type="hidden" name="userId" value={user.uid} />
-      
+    <form ref={formRef} onSubmit={handleSubmit} className="grid gap-4 py-4">
       <div className="grid gap-2">
         <Label htmlFor="name">Full Name</Label>
         <Input id="name" name="name" defaultValue={user.displayName ?? ''} />
@@ -78,16 +153,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
         </Alert>
       )}
 
-      <SubmitButton />
-    </form>
-  );
-}
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <Button type="submit" aria-disabled={pending}>
+      <Button type="submit" aria-disabled={pending}>
       {pending ? (
         <>
           <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -100,5 +166,6 @@ function SubmitButton() {
         </>
       )}
     </Button>
+    </form>
   );
 }

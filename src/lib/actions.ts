@@ -20,7 +20,7 @@ export async function createUserInFirestore(user: User) {
     // New user, create a document for them
     const { uid, email, displayName, phoneNumber } = user;
     const isAdmin = email === 'ramashankarsingh841@gmail.com';
-    const name = displayName || (email ? email.split('@')[0] : phoneNumber) || 'New User';
+    const name = displayName || (email ? email.split('@')[0] : '') || phoneNumber || 'New User';
 
     try {
       await setDoc(userRef, {
@@ -106,80 +106,5 @@ export async function getMatchScore(prevState: MatcherState, formData: FormData)
       matchScore: null,
       errors: {},
     };
-  }
-}
-
-
-const ApplySchema = z.object({
-  jobId: z.string(),
-  userId: z.string(),
-  name: z.string().min(1, "Name is required."),
-  email: z.string().email("Invalid email address."),
-  phone: z.string().min(1, "Phone number is required."),
-  resume: z.any(), // For now, we'll just check that a file is present
-});
-
-export type ApplyState = {
-  errors?: {
-    name?: string[];
-    email?: string[];
-    phone?: string[];
-    resume?: string[];
-    jobId?: string[];
-  };
-  message?: string | null;
-  success?: boolean;
-};
-
-export async function applyForJob(prevState: ApplyState, formData: FormData) {
-  const { firestore } = await initializeFirebaseOnServer();
-  const validatedFields = ApplySchema.safeParse({
-    jobId: formData.get('jobId'),
-    userId: formData.get('userId'),
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-    resume: formData.get('resume'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid input. Please check the fields.',
-      success: false,
-    };
-  }
-  
-  const { jobId, userId, name, email, phone, resume } = validatedFields.data;
-
-  if (!resume || resume.size === 0) {
-    return {
-       errors: { resume: ['Resume is required.'] },
-       message: 'Please upload your resume.',
-       success: false,
-    }
-  }
-
-  try {
-    // In a real app, you would upload the resume to Firebase Storage
-    // and get a download URL. For now, we'll use a placeholder.
-    const resumeUrl = `/resumes/${userId}/${resume.name}`;
-
-    await addDoc(collection(firestore, 'candidates'), {
-      jobId,
-      userId,
-      name,
-      email,
-      phone,
-      resumeUrl,
-      skills: [], // Skills could be parsed from resume in a more advanced version
-      status: 'Applied',
-      appliedAt: serverTimestamp(),
-    });
-
-    return { message: 'Application submitted successfully!', success: true, errors: {} };
-  } catch (error) {
-    console.error('Error submitting application:', error);
-    return { message: 'Failed to submit application. Please try again.', success: false, errors: {} };
   }
 }
