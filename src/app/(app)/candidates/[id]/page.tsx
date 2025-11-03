@@ -1,3 +1,4 @@
+'use client';
 import { candidates, jobs } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Mail, Phone, FileText, Briefcase } from 'lucide-react';
 import UpdateStatus from './components/update-status';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 
 export default function CandidateDetailPage({ params }: { params: { id: string } }) {
   const candidate = candidates.find(c => c.id === params.id);
@@ -80,9 +82,11 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
               <CardTitle>Resume</CardTitle>
             </CardHeader>
             <CardContent>
-                <Button className="w-full">
+                <Button className="w-full" asChild>
+                  <Link href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer">
                     <FileText className="mr-2" />
                     View Resume
+                  </Link>
                 </Button>
             </CardContent>
           </Card>
