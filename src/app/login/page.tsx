@@ -28,7 +28,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [otpSent, setOtpSent] = useState(false);
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(0);
   
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
@@ -63,7 +63,7 @@ export default function LoginPage() {
         setCountdown(countdown - 1);
       }, 1000);
     } else if (countdown === 0) {
-      setOtpSent(false); // Allow resend
+      setOtpSent(false);
     }
     return () => clearTimeout(timer);
   }, [otpSent, countdown]);
@@ -227,9 +227,9 @@ export default function LoginPage() {
                     onChange={(e) => setPhone(e.target.value)}
                     required 
                   />
-                  <Button variant="outline" onClick={handlePhoneSignIn} disabled={countdown > 0 && countdown < 30}>
+                  <Button variant="outline" onClick={handlePhoneSignIn} disabled={countdown > 0}>
                     <Phone className="mr-2 h-4 w-4" /> 
-                    {countdown > 0 && countdown < 30 ? `Resend in ${countdown}s` : 'Send Code'}
+                    {countdown > 0 ? `Resend in ${countdown}s` : 'Send Code'}
                   </Button>
                 </div>
               </div>
@@ -249,7 +249,8 @@ export default function LoginPage() {
                   <Button onClick={handleOtpVerify}>Verify</Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Sent OTP to {phone}. Resend in {countdown}s.
+                  Sent OTP to {phone}. {countdown > 0 ? `Resend in ${countdown}s.` : 
+                  <Button variant="link" className="p-0 h-auto" onClick={handlePhoneSignIn}>Resend code</Button>}
                 </p>
               </div>
             )}
@@ -278,3 +279,5 @@ function LoginButton() {
     </Button>
   );
 }
+
+    
