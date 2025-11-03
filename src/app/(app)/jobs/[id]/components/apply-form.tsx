@@ -14,13 +14,21 @@ import { getStorage, ref, uploadBytes } from "firebase/storage";
 import { z } from 'zod';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
+const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1 MB
+
 const ApplySchema = z.object({
   jobId: z.string(),
   userId: z.string(),
   name: z.string().min(1, 'Name is required.'),
   email: z.string().email('Invalid email address.'),
   phone: z.string().min(1, 'Phone number is required.'),
-  resume: z.instanceof(File).refine(file => file.size > 0, 'Resume is required.'),
+  resume: z
+    .instanceof(File)
+    .refine(file => file.size > 0, 'Resume is required.')
+    .refine(
+      file => file.size <= MAX_FILE_SIZE,
+      `Max file size is 1MB.`
+    ),
 });
 
 type FormState = {
@@ -151,8 +159,9 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
       </div>
       
       <div className="grid gap-2">
-        <Label htmlFor="resume">Resume (PDF)</Label>
+        <Label htmlFor="resume">Resume (PDF, DOC, DOCX)</Label>
         <Input id="resume" name="resume" type="file" accept=".pdf,.doc,.docx" />
+        <p className="text-sm text-muted-foreground">Max file size: 1 MB.</p>
         {state.errors?.resume && <p className="text-sm text-destructive">{state.errors.resume[0]}</p>}
       </div>
 
