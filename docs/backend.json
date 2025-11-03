@@ -128,8 +128,9 @@
         },
         "resumeUrl": {
           "type": "string",
-          "description": "URL of the candidate's resume stored in cloud storage.",
-          "format": "uri"
+          "description": "Data URL of the candidate's resume stored in the database.",
+          "contentEncoding": "base64",
+          "contentMediaType": "application/pdf"
         },
         "jobAppliedFor": {
           "type": "string",
@@ -222,6 +223,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support the Internal Talent Hub application, focusing on secure and efficient data access for user authentication, job management, and candidate tracking. Authorization Independence is achieved by avoiding hierarchical `get()` calls in security rules. Roles are stored in the database rather than using custom claims. Data is structured to support the required QAPs (Queries Are Permissions) via structural segregation, membership models, and denormalization to allow secure list operations.\n\n**Users:** User data is stored in the `/users/{userId}` collection. This path-based ownership simplifies security rules for user-specific data and facilitates atomic operations.\n\n**Jobs:** Jobs are stored in `/jobs/{jobId}` collection. The `postedBy` field in each job document references the user who created the job and is used for authorization. This allows direct access to job documents without needing to traverse user documents.\n\n**Candidates:** Candidates are stored in `/candidates/{candidateId}` collection. Each candidate document contains a `jobAppliedFor` field, which references the job they applied for. The structure allows direct lookups and modifications without needing to perform hierarchical reads.\n\nThis structure prioritizes Authorization Independence by denormalizing authorization context (e.g., including the `postedBy` field in the `Job` entity). It also uses Structural Segregation to ensure homogeneous security posture within each collection. Access Modeling is based on Path-Based ownership for user data and collaborative data.\n"
+    "reasoning": "The Firestore data structure is designed to support the Internal Talent Hub application, focusing on secure and efficient data access for user authentication, job management, and candidate tracking. Authorization Independence is achieved by avoiding hierarchical `get()` calls in security rules. Roles are stored in the database rather than using custom claims. Data is structured to support the required QAPs (Queries Are Permissions) via structural segregation, membership models, and denormalization to allow secure list operations.\n\n**Users:** User data is stored in the `/users/{userId}` collection. This path-based ownership simplifies security rules for user-specific data and facilitates atomic operations.\n\n**Jobs:** Jobs are stored in `/jobs/{jobId}` collection. The `postedBy` field in each job document references the user who created the job and is used for authorization. This allows direct access to job documents without needing to traverse user documents.\n\n**Candidates:** Candidates are stored in `/candidates/{candidateId}` collection. Each candidate document contains a `jobAppliedFor` field, which references the job they applied for. The structure allows direct lookups and modifications without needing to perform hierarchical reads.\n"
   }
 }

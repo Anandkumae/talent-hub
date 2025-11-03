@@ -17,10 +17,10 @@ import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 const ApplySchema = z.object({
   jobId: z.string(),
   userId: z.string(),
-  name: z.string().min(1, "Name is required."),
-  email: z.string().email("Invalid email address."),
-  phone: z.string().min(1, "Phone number is required."),
-  resume: z.instanceof(File).refine(file => file.size > 0, "Resume is required."),
+  name: z.string().min(1, 'Name is required.'),
+  email: z.string().email('Invalid email address.'),
+  phone: z.string().min(1, 'Phone number is required.'),
+  resume: z.instanceof(File).refine(file => file.size > 0, 'Resume is required.'),
 });
 
 type FormState = {
@@ -33,6 +33,16 @@ const initialState: FormState = {
   errors: null,
   message: null,
   success: false,
+};
+
+// Helper to read file as Data URL
+const readFileAsDataURL = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
 export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpen: (open: boolean) => void }) {
@@ -77,9 +87,8 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
     const { jobId, userId, name, email, phone, resume } = validatedFields.data;
 
     try {
-      // In a real app, you would upload the resume to Firebase Storage
-      // and get a download URL. For now, we'll use a placeholder.
-      const resumeUrl = `/resumes/${userId}/${resume.name}`;
+      // Read the resume file as a Data URL
+      const resumeUrl = await readFileAsDataURL(resume);
 
       const candidatesCollection = collection(firestore, 'candidates');
 
@@ -89,7 +98,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
         name,
         email,
         phone,
-        resumeUrl,
+        resumeUrl, // Store the Data URL in Firestore
         skills: [], // Skills could be parsed from resume in a more advanced version
         status: 'Applied',
         appliedAt: serverTimestamp(),
@@ -141,7 +150,7 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
       
       <div className="grid gap-2">
         <Label htmlFor="resume">Resume (PDF)</Label>
-        <Input id="resume" name="resume" type="file" accept=".pdf" />
+        <Input id="resume" name="resume" type="file" accept=".pdf,.doc,.docx" />
         {state.errors?.resume && <p className="text-sm text-destructive">{state.errors.resume[0]}</p>}
       </div>
 

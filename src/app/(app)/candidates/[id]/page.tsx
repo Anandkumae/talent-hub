@@ -1,25 +1,39 @@
 'use client';
-import { candidates, jobs } from '@/lib/data';
+import { jobs } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Mail, Phone, FileText, Briefcase } from 'lucide-react';
+import { Mail, Phone, FileText, Briefcase, Calendar } from 'lucide-react';
 import UpdateStatus from './components/update-status';
 import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import type { Candidate } from '@/lib/definitions';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function CandidateDetailPage({ params }: { params: { id: string } }) {
-  const candidate = candidates.find(c => c.id === params.id);
+  const firestore = useFirestore();
+  const candidateRef = useMemoFirebase(() => {
+    if (!firestore || !params.id) return null;
+    return doc(firestore, 'candidates', params.id);
+  }, [firestore, params.id]);
+
+  const { data: candidate, isLoading } = useDoc<Candidate>(candidateRef);
   
+  if (isLoading) {
+    return <PageHeader title="Loading..." />;
+  }
+
   if (!candidate) {
     notFound();
   }
 
   const job = jobs.find(j => j.id === candidate.jobId);
-  const appliedDate = new Date(candidate.appliedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+  const appliedDate = candidate.appliedAt ? new Date(candidate.appliedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
 
   return (
     <>
@@ -39,7 +53,7 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
               <div>
                 <CardTitle className="text-2xl">{candidate.name}</CardTitle>
                 <CardDescription className="flex items-center gap-2 mt-1">
-                  <Briefcase className="h-4 w-4" /> Applied for {job?.title}
+                  <Briefcase className="h-4 w-4" /> Applied for {job?.title || 'Unknown Job'}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -55,14 +69,16 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
                   <span>{candidate.phone}</span>
                 </div>
               </div>
-              <div className="mt-6">
-                <h3 className="font-semibold mb-2">Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {candidate.skills.map(skill => (
-                    <Badge key={skill} variant="secondary">{skill}</Badge>
-                  ))}
+              {candidate.skills && candidate.skills.length > 0 && (
+                <div className="mt-6">
+                    <h3 className="font-semibold mb-2">Skills</h3>
+                    <div className="flex flex-wrap gap-2">
+                    {candidate.skills.map(skill => (
+                        <Badge key={skill} variant="secondary">{skill}</Badge>
+                    ))}
+                    </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -73,7 +89,10 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
               <CardTitle>Application Status</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">Applied on {appliedDate}</p>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                <Calendar className="h-4 w-4" />
+                <span>Applied on {appliedDate}</span>
+              </div>
               <UpdateStatus currentStatus={candidate.status} />
             </CardContent>
           </Card>

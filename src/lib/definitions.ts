@@ -31,5 +31,6 @@ export type Candidate = {
   jobId: string;
   userId: string;
   status: CandidateStatus;
-  appliedAt: string;
+  // This can be a Firestore Timestamp or a string
+  appliedAt: any; 
 };
