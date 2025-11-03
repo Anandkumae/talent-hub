@@ -33,20 +33,8 @@ export default function LoginPage() {
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (auth && recaptchaContainerRef.current && !recaptchaVerifierRef.current) {
-        recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
-            'size': 'invisible',
-            'callback': (response: any) => {
-              // reCAPTCHA solved, allow signInWithPhoneNumber.
-            }
-        });
-    }
-  }, [auth]);
-
-  useEffect(() => {
-    const checkUserRoleAndRedirect = async () => {
-      if (user && firestore) {
-        // The createUserInFirestore function is already called on sign-in events
+    if (user && firestore) {
+      const checkUserRoleAndRedirect = async () => {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
@@ -57,16 +45,13 @@ export default function LoginPage() {
             router.push('/my-applications');
           }
         } else {
-          // If doc doesn't exist yet, it might be in the process of being created.
-          // A default redirect can be set here, or we can wait.
-          // For now, redirecting to a safe default page.
           router.push('/my-applications');
         }
-      }
-    };
+      };
 
-    if (!isUserLoading && user) {
-      checkUserRoleAndRedirect();
+      if (!isUserLoading) {
+        checkUserRoleAndRedirect();
+      }
     }
   }, [user, isUserLoading, router, firestore]);
 
@@ -88,7 +73,7 @@ export default function LoginPage() {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      await createUserInFirestore(result.user); // ✅ Use result.user
+      await createUserInFirestore(result.user);
     } catch (error: any) {
       console.error('Social Sign-in error:', error);
       if (error.code === 'auth/popup-closed-by-user') {
@@ -101,12 +86,36 @@ export default function LoginPage() {
     }
   };
 
+  const setupRecaptcha = () => {
+    if (!auth) return;
+    // Clean up previous verifier if it exists
+    if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+    }
+    
+    if (recaptchaContainerRef.current) {
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        },
+        'expired-callback': () => {
+          // Response expired. Ask user to solve reCAPTCHA again.
+        }
+      });
+    }
+  };
+
   const handlePhoneSignIn = async () => {
     setAuthError(null);
     if (!auth) {
       setAuthError('Authentication service not available.');
       return;
     }
+    
+    // Setup reCAPTCHA on demand
+    setupRecaptcha();
+
     const verifier = recaptchaVerifierRef.current;
     if (!verifier) {
       setAuthError('reCAPTCHA not initialized. Please wait a moment and try again.');
@@ -133,10 +142,14 @@ export default function LoginPage() {
 
     try {
       const result = await confirmationResult.confirm(otp);
-      await createUserInFirestore(result.user); // ✅ Use result.user
+      await createUserInFirestore(result.user);
     } catch (error: any) {
       console.error('OTP verification error:', error);
-      setAuthError('Failed to verify OTP. Please try again.');
+      if (error.code === 'auth/code-expired') {
+        setAuthError('Verification code has expired. Please send a new one.');
+      } else {
+        setAuthError('Failed to verify OTP. Please try again.');
+      }
     }
   };
 
