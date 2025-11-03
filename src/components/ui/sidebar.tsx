@@ -5,7 +5,6 @@ import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
 
-import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +24,7 @@ const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
+const MOBILE_BREAKPOINT = 768
 
 type SidebarContext = {
   state: "expanded" | "collapsed"
@@ -67,8 +67,19 @@ const SidebarProvider = React.forwardRef<
     },
     ref
   ) => {
-    const isMobile = useIsMobile()
+    const [isMounted, setIsMounted] = React.useState(false);
+    const [isMobile, setIsMobile] = React.useState(false);
     const [openMobile, setOpenMobile] = React.useState(false)
+
+    React.useEffect(() => {
+        setIsMounted(true);
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     // This is the internal state of the sidebar.
     // We use openProp and setOpenProp for control from outside the component.
@@ -128,6 +139,10 @@ const SidebarProvider = React.forwardRef<
       }),
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
     )
+    
+     if (!isMounted) {
+      return null;
+    }
 
     return (
       <SidebarContext.Provider value={contextValue}>
