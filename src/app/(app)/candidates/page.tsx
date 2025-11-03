@@ -4,15 +4,13 @@ import React from 'react';
 import { PageHeader } from '@/components/shared/page-header';
 import { CandidatesDataTable } from './components/data-table';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { columns } from './components/columns';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import type { Candidate, User } from '@/lib/definitions';
+import type { Candidate, User as UserData } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Users } from 'lucide-react';
-
 
 export default function CandidatesPage({ searchParams }: { searchParams: { search: string } }) {
   const firestore = useFirestore();
@@ -23,12 +21,13 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
   
-  const { data: userData, isLoading: isUserDocLoading } = useDoc<User>(userDocRef);
+  const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
   const userRole = userData?.role;
   const canListCandidates = userRole === 'Admin' || userRole === 'HR';
 
   const candidatesQuery = useMemoFirebase(() => {
-    // Only construct the query if the user is an admin/HR
+    // IMPORTANT: Only construct the query if the user is an admin/HR.
+    // If canListCandidates is false, this returns null, and useCollection will not run.
     if (!firestore || !canListCandidates) return null;
     return query(collection(firestore, 'candidates'));
   }, [firestore, canListCandidates]);
@@ -41,7 +40,8 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
   }, [firestore]);
   const { data: jobs, isLoading: areJobsLoading } = useCollection<any>(jobsQuery);
   
-  const isLoading = isUserLoading || isUserDocLoading || areCandidatesLoading || areJobsLoading;
+  // Overall loading state considers user auth, user role check, and data fetching
+  const isLoading = isUserLoading || isUserDocLoading || (canListCandidates && (areCandidatesLoading || areJobsLoading));
 
   const data = React.useMemo(() => {
     if (!candidates || !jobs) return [];
@@ -74,9 +74,8 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
     )
   }
 
-  // If the user is not an admin, show a message instead of the table.
-  // We pass an empty data array to the table component.
-  if (!canListCandidates && !isUserLoading) {
+  // If we have determined the user is not an Admin/HR, show an access denied message.
+  if (!canListCandidates && !isUserLoading && !isUserDocLoading) {
      return (
        <>
          <PageHeader title="Candidates" />
@@ -87,9 +86,6 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
              You do not have permission to view the list of all candidates. This page is for Admin and HR personnel only.
            </AlertDescription>
          </Alert>
-         <div className="mt-4">
-            <CandidatesDataTable columns={columns} data={[]} search={searchParams.search} />
-         </div>
        </>
      );
   }
