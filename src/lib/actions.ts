@@ -20,7 +20,7 @@ export async function createUserInFirestore(user: User) {
     // New user, create a document for them
     const { uid, email, displayName, phoneNumber } = user;
     const isAdmin = email === 'ramashankarsingh841@gmail.com';
-    const name = displayName || email?.split('@')[0] || phoneNumber;
+    const name = displayName || (email ? email.split('@')[0] : phoneNumber);
 
     try {
       await setDoc(userRef, {
