@@ -27,22 +27,25 @@ export default function JobsPage() {
 
   const data = React.useMemo(() => {
     if (!jobs) return [];
+    // Robustly process the jobs data to prevent crashes
     return jobs.map(job => {
       let postedAtDate;
+      // Check if postedAt is a Firestore Timestamp
       if (job.postedAt && typeof job.postedAt.toDate === 'function') {
-        // Firestore Timestamp
         postedAtDate = job.postedAt.toDate();
       } else if (job.postedAt) {
-        // String date
+        // Handle string or other formats that can be parsed by Date
         postedAtDate = new Date(job.postedAt);
       } else {
+        // Fallback for missing date
         postedAtDate = new Date();
       }
       return {
           ...job,
+          // Ensure postedAt is always a valid ISO string for the data table
           postedAt: postedAtDate.toISOString(),
       }
-    })
+    });
   }, [jobs]);
 
   if (areJobsLoading) {
