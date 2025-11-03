@@ -30,7 +30,9 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
   let postedDate = 'N/A';
   if (job.postedAt) {
     const date = job.postedAt.toDate ? job.postedAt.toDate() : new Date(job.postedAt);
-    postedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+     if (!isNaN(date.getTime())) {
+        postedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+     }
   }
 
   return (

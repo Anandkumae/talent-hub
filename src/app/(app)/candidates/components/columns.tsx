@@ -77,7 +77,11 @@ export const columns: ColumnDef<Candidate & { jobTitle: string }>[] = [
       </Button>
     ),
      cell: ({ row }) => {
-      const date = new Date(row.getValue("appliedAt"));
+      const dateString = row.getValue("appliedAt") as string;
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
       return new Intl.DateTimeFormat("en-US", {
         month: "short",
         day: "numeric",

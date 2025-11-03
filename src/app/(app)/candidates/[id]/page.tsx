@@ -39,7 +39,14 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
   }
 
   const job = jobs?.find(j => j.id === candidate.jobId);
-  const appliedDate = candidate.appliedAt?.seconds ? new Date(candidate.appliedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
+  
+  let appliedDate = 'N/A';
+  if (candidate.appliedAt) {
+    const date = candidate.appliedAt.toDate ? candidate.appliedAt.toDate() : new Date(candidate.appliedAt);
+    if (!isNaN(date.getTime())) {
+      appliedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+    }
+  }
 
   return (
     <>

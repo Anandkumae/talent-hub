@@ -47,11 +47,18 @@ export default function CandidatesPage() {
   const data = React.useMemo(() => {
     if (!candidates || !jobs) return [];
     return candidates.map(c => {
-      const appliedAtDate = c.appliedAt?.seconds ? new Date(c.appliedAt.seconds * 1000) : new Date();
+      let appliedAtDate;
+      if (c.appliedAt && typeof c.appliedAt.toDate === 'function') {
+        appliedAtDate = c.appliedAt.toDate();
+      } else if (c.appliedAt) {
+        appliedAtDate = new Date(c.appliedAt);
+      } else {
+        appliedAtDate = new Date();
+      }
       return {
         ...c,
         jobTitle: jobs.find(j => j.id === c.jobId)?.title || 'N/A',
-        appliedAt: appliedAtDate.toISOString(),
+        appliedAt: !isNaN(appliedAtDate.getTime()) ? appliedAtDate.toISOString() : new Date().toISOString(),
       };
     });
   }, [candidates, jobs]);

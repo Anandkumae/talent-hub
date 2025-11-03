@@ -41,6 +41,9 @@ export default function MyApplicationsPage() {
   };
   
   const formatDate = (timestamp: any) => {
+    if (timestamp && timestamp.toDate) {
+      return timestamp.toDate().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+    }
     if (timestamp && timestamp.seconds) {
       return new Date(timestamp.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
     }

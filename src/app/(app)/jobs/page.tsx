@@ -43,7 +43,7 @@ export default function JobsPage() {
       return {
           ...job,
           // Ensure postedAt is always a valid ISO string for the data table
-          postedAt: postedAtDate.toISOString(),
+          postedAt: !isNaN(postedAtDate.getTime()) ? postedAtDate.toISOString() : new Date().toISOString(),
       }
     });
   }, [jobs]);
