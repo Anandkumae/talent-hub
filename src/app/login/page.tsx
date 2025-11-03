@@ -28,6 +28,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [otpSent, setOtpSent] = useState(false);
+  const [countdown, setCountdown] = useState(30);
   
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
   const recaptchaContainerRef = useRef<HTMLDivElement | null>(null);
@@ -54,6 +55,19 @@ export default function LoginPage() {
       }
     }
   }, [user, isUserLoading, router, firestore]);
+
+   useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (otpSent && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+      }, 1000);
+    } else if (countdown === 0) {
+      setOtpSent(false); // Allow resend
+    }
+    return () => clearTimeout(timer);
+  }, [otpSent, countdown]);
+
 
   const onSocialLogin = async (providerId: 'google') => {
     if (!auth) {
@@ -113,7 +127,6 @@ export default function LoginPage() {
       return;
     }
     
-    // Setup reCAPTCHA on demand
     setupRecaptcha();
 
     const verifier = recaptchaVerifierRef.current;
@@ -126,6 +139,7 @@ export default function LoginPage() {
       const result = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(result);
       setOtpSent(true);
+      setCountdown(30); // Reset countdown on send
     } catch (error: any)
     {
       console.error('Phone sign-in error:', error);
@@ -213,8 +227,9 @@ export default function LoginPage() {
                     onChange={(e) => setPhone(e.target.value)}
                     required 
                   />
-                  <Button variant="outline" onClick={handlePhoneSignIn}>
-                    <Phone className="mr-2 h-4 w-4" /> Send Code
+                  <Button variant="outline" onClick={handlePhoneSignIn} disabled={countdown > 0 && countdown < 30}>
+                    <Phone className="mr-2 h-4 w-4" /> 
+                    {countdown > 0 && countdown < 30 ? `Resend in ${countdown}s` : 'Send Code'}
                   </Button>
                 </div>
               </div>
@@ -234,7 +249,7 @@ export default function LoginPage() {
                   <Button onClick={handleOtpVerify}>Verify</Button>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Sent OTP to {phone}. <Button variant="link" className="p-0 h-auto" onClick={() => setOtpSent(false)}>Change number?</Button>
+                  Sent OTP to {phone}. Resend in {countdown}s.
                 </p>
               </div>
             )}
