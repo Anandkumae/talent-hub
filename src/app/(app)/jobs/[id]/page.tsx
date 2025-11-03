@@ -27,9 +27,11 @@ export default function JobDetailPage({ params }: { params: { id: string } }) {
     notFound();
   }
   
-  const postedDate = job.postedAt?.seconds 
-    ? new Date(job.postedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) 
-    : 'N/A';
+  let postedDate = 'N/A';
+  if (job.postedAt) {
+    const date = job.postedAt.toDate ? job.postedAt.toDate() : new Date(job.postedAt);
+    postedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'});
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
