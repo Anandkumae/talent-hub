@@ -28,7 +28,6 @@ export default function JobsPage() {
   
   const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
   const userRole = userData?.role;
-  // User can create jobs if they are logged in and have the correct role.
   const canCreateJobs = user && (userRole === 'Admin' || userRole === 'HR');
 
   const jobsQuery = useMemoFirebase(() => {
@@ -38,7 +37,6 @@ export default function JobsPage() {
 
   const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
 
-  // Corrected loading logic: user doc is only loading if a user is logged in.
   const isLoading = areJobsLoading || isUserLoading || (user && isUserDocLoading);
 
   const data = React.useMemo(() => {

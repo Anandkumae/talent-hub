@@ -36,7 +36,7 @@ service cloud.firestore {
      * @description Controls access to job postings. Job postings are publicly readable, but only the creator can modify or delete them.
      */
     match /jobs/{jobId} {
-      allow read, list: if isSignedIn();
+      allow read, list: if true;
       allow create: if isSignedIn() && request.resource.data.postedBy == request.auth.uid;
       allow update, delete: if isJobOwner(resource.data.postedBy);
     }
