@@ -9,8 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Briefcase, AlertTriangle } from 'lucide-react';
-import type { Candidate } from '@/lib/definitions';
-import { jobs } from '@/lib/data';
+import type { Candidate, Job } from '@/lib/definitions';
 
 const statusStyles: Record<Candidate['status'], string> = {
     Applied: 'bg-blue-500/20 text-blue-700 border-blue-500/20 hover:bg-blue-500/30',
@@ -31,8 +30,14 @@ export default function MyApplicationsPage() {
 
   const { data: applications, isLoading, error } = useCollection<Candidate>(candidatesQuery);
 
+  const jobsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'jobs'));
+  }, [firestore]);
+  const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
+
   const getJobTitle = (jobId: string) => {
-    const job = jobs.find(j => j.id === jobId);
+    const job = jobs?.find(j => j.id === jobId);
     return job ? job.title : 'Unknown Job';
   };
   
@@ -43,11 +48,13 @@ export default function MyApplicationsPage() {
     return 'N/A';
   }
 
+  const overallLoading = isLoading || areJobsLoading;
+
   return (
     <>
       <PageHeader title="My Applications" />
       
-      {isLoading && (
+      {overallLoading && (
         <div className="space-y-4">
           <Skeleton className="h-24 w-full" />
           <Skeleton className="h-24 w-full" />
@@ -64,7 +71,7 @@ export default function MyApplicationsPage() {
         </Alert>
       )}
 
-      {!isLoading && !error && (
+      {!overallLoading && !error && (
         <div className="space-y-4">
           {applications && applications.length > 0 ? (
             applications.map(app => (

@@ -1,5 +1,4 @@
 'use client';
-import { jobs } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Mail, Phone, Briefcase, Calendar } from 'lucide-react';
 import UpdateStatus from './components/update-status';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import type { Candidate } from '@/lib/definitions';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import type { Candidate, Job } from '@/lib/definitions';
+import { doc, collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ViewResumeButton } from './components/view-resume-button';
 
@@ -21,8 +20,16 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
     return doc(firestore, 'candidates', params.id);
   }, [firestore, params.id]);
 
-  const { data: candidate, isLoading } = useDoc<Candidate>(candidateRef);
+  const { data: candidate, isLoading: isCandidateLoading } = useDoc<Candidate>(candidateRef);
   
+  const jobsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'jobs'));
+  }, [firestore]);
+  const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
+
+  const isLoading = isCandidateLoading || areJobsLoading;
+
   if (isLoading) {
     return <PageHeader title="Loading..." />;
   }
@@ -31,7 +38,7 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
     notFound();
   }
 
-  const job = jobs.find(j => j.id === candidate.jobId);
+  const job = jobs?.find(j => j.id === candidate.jobId);
   const appliedDate = candidate.appliedAt?.seconds ? new Date(candidate.appliedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
 
   return (

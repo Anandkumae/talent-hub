@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -9,7 +10,7 @@ import { Search, Users } from 'lucide-react';
 import { columns } from './components/columns';
 import { useFirestore, useCollection, useMemoFirebase, useUser, useDoc } from '@/firebase';
 import { collection, query, doc } from 'firebase/firestore';
-import type { Candidate, User as UserData } from '@/lib/definitions';
+import type { Candidate, Job, User as UserData } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
@@ -29,8 +30,6 @@ export default function CandidatesPage() {
   const canListCandidates = userRole === 'Admin' || userRole === 'HR';
 
   const candidatesQuery = useMemoFirebase(() => {
-    // IMPORTANT: Only construct the query if the user is an admin/HR.
-    // If canListCandidates is false, this returns null, and useCollection will not run.
     if (!firestore || !canListCandidates) return null;
     return query(collection(firestore, 'candidates'));
   }, [firestore, canListCandidates]);
@@ -41,9 +40,8 @@ export default function CandidatesPage() {
     if (!firestore) return null;
     return query(collection(firestore, 'jobs'));
   }, [firestore]);
-  const { data: jobs, isLoading: areJobsLoading } = useCollection<any>(jobsQuery);
+  const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
   
-  // Overall loading state considers user auth, user role check, and data fetching
   const isLoading = isUserLoading || isUserDocLoading || (canListCandidates && (areCandidatesLoading || areJobsLoading));
 
   const data = React.useMemo(() => {
@@ -77,7 +75,6 @@ export default function CandidatesPage() {
     )
   }
 
-  // If we have determined the user is not an Admin/HR, show an access denied message.
   if (!canListCandidates && !isUserLoading && !isUserDocLoading) {
      return (
        <>

@@ -27,8 +27,8 @@ export default function JobsPage() {
   }, [firestore, user]);
   
   const { data: userData, isLoading: isUserDocLoading } = useDoc<UserData>(userDocRef);
-  const userRole = userData?.role;
-  const canCreateJobs = user && (userRole === 'Admin' || userRole === 'HR');
+  
+  const canCreateJobs = user && (userData?.role === 'Admin' || userData?.role === 'HR');
 
   const jobsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
@@ -37,7 +37,7 @@ export default function JobsPage() {
 
   const { data: jobs, isLoading: areJobsLoading } = useCollection<Job>(jobsQuery);
 
-  const isLoading = areJobsLoading || isUserLoading || (user && isUserDocLoading);
+  const isLoading = areJobsLoading || isUserLoading;
 
   const data = React.useMemo(() => {
     if (!jobs) return [];
