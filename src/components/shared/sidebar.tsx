@@ -82,6 +82,8 @@ export function AppSidebar() {
             setMenuItems(userMenuItems);
         }
       } else {
+        // When no user is logged in, they should still see job browsing options if the app supports it.
+        // For now, we default to user items.
         setMenuItems(userMenuItems);
       }
     };
