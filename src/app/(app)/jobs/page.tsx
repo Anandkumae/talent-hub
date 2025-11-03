@@ -28,11 +28,20 @@ export default function JobsPage() {
   const data = React.useMemo(() => {
     if (!jobs) return [];
     return jobs.map(job => {
-        const postedAtDate = job.postedAt?.seconds ? new Date(job.postedAt.seconds * 1000) : new Date();
-        return {
-            ...job,
-            postedAt: postedAtDate.toISOString(),
-        }
+      let postedAtDate;
+      if (job.postedAt && typeof job.postedAt.toDate === 'function') {
+        // Firestore Timestamp
+        postedAtDate = job.postedAt.toDate();
+      } else if (job.postedAt) {
+        // String date
+        postedAtDate = new Date(job.postedAt);
+      } else {
+        postedAtDate = new Date();
+      }
+      return {
+          ...job,
+          postedAt: postedAtDate.toISOString(),
+      }
     })
   }, [jobs]);
 

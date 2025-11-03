@@ -15,7 +15,7 @@ export type Job = {
   description: string;
   requirements: string[];
   status: JobStatus;
-  postedAt: string;
+  postedAt: any; // Allow for Firestore Timestamp
   postedBy: string;
 };
 
