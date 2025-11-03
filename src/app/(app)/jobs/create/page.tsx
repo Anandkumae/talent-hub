@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
