@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Search } from 'lucide-react';
@@ -14,7 +15,9 @@ import type { Job } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 
 
-export default function JobsPage({ searchParams }: { searchParams: { search: string } }) {
+export default function JobsPage() {
+  const searchParams = useSearchParams();
+  const search = searchParams.get('search') || '';
   const firestore = useFirestore();
 
   const jobsQuery = useMemoFirebase(() => {
@@ -68,7 +71,7 @@ export default function JobsPage({ searchParams }: { searchParams: { search: str
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]" defaultValue={searchParams.search}/>
+            <Input placeholder="Search jobs..." className="pl-8 sm:w-[300px]" defaultValue={search}/>
           </div>
           <Button asChild>
             <Link href="/jobs/create">
@@ -78,7 +81,7 @@ export default function JobsPage({ searchParams }: { searchParams: { search: str
           </Button>
         </div>
       </PageHeader>
-      <JobsDataTable columns={columns} data={data} search={searchParams.search} />
+      <JobsDataTable columns={columns} data={data} search={search} />
     </>
   );
 }

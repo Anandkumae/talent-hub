@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import { PageHeader } from '@/components/shared/page-header';
 import { CandidatesDataTable } from './components/data-table';
 import { Input } from '@/components/ui/input';
@@ -12,7 +13,9 @@ import type { Candidate, User as UserData } from '@/lib/definitions';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-export default function CandidatesPage({ searchParams }: { searchParams: { search: string } }) {
+export default function CandidatesPage() {
+  const searchParams = useSearchParams();
+  const search = searchParams.get('search') || '';
   const firestore = useFirestore();
   const { user, isUserLoading } = useUser();
 
@@ -95,10 +98,10 @@ export default function CandidatesPage({ searchParams }: { searchParams: { searc
       <PageHeader title="Candidates">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search candidates..." className="pl-8 sm:w-[300px]" defaultValue={searchParams.search}/>
+          <Input placeholder="Search candidates..." className="pl-8 sm:w-[300px]" defaultValue={search}/>
         </div>
       </PageHeader>
-      <CandidatesDataTable columns={columns} data={data} search={searchParams.search} />
+      <CandidatesDataTable columns={columns} data={data} search={search} />
     </>
   );
 }
