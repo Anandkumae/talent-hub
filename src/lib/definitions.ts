@@ -27,7 +27,8 @@ export type Candidate = {
   email: string;
   phone: string;
   skills: string[];
-  resumeUrl: string;
+  // This will now be a path to a file in Firebase Storage, not a Data URL
+  resumeUrl: string; 
   jobId: string;
   userId: string;
   status: CandidateStatus;

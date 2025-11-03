@@ -5,15 +5,14 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Mail, Phone, FileText, Briefcase, Calendar } from 'lucide-react';
+import { Mail, Phone, Briefcase, Calendar } from 'lucide-react';
 import UpdateStatus from './components/update-status';
 import { Separator } from '@/components/ui/separator';
-import Link from 'next/link';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import type { Candidate } from '@/lib/definitions';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ViewResumeButton } from './components/view-resume-button';
 
 export default function CandidateDetailPage({ params }: { params: { id: string } }) {
   const firestore = useFirestore();
@@ -33,7 +32,7 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
   }
 
   const job = jobs.find(j => j.id === candidate.jobId);
-  const appliedDate = candidate.appliedAt ? new Date(candidate.appliedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
+  const appliedDate = candidate.appliedAt?.seconds ? new Date(candidate.appliedAt.seconds * 1000).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric'}) : 'N/A';
 
   return (
     <>
@@ -101,12 +100,7 @@ export default function CandidateDetailPage({ params }: { params: { id: string }
               <CardTitle>Resume</CardTitle>
             </CardHeader>
             <CardContent>
-                <Button className="w-full" asChild>
-                  <Link href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer">
-                    <FileText className="mr-2" />
-                    View Resume
-                  </Link>
-                </Button>
+                <ViewResumeButton resumePath={candidate.resumeUrl} />
             </CardContent>
           </Card>
         </div>

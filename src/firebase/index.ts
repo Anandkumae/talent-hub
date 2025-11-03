@@ -4,12 +4,14 @@ import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore'
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // This object will hold the initialized Firebase services.
 let firebaseServices: {
     firebaseApp: FirebaseApp;
     auth: Auth;
     firestore: Firestore;
+    storage: FirebaseStorage;
 } | null = null;
 
 
@@ -37,7 +39,8 @@ export function initializeFirebase() {
   firebaseServices = {
     firebaseApp: app,
     auth: getAuth(app),
-    firestore: getFirestore(app)
+    firestore: getFirestore(app),
+    storage: getStorage(app)
   };
 
   return firebaseServices;

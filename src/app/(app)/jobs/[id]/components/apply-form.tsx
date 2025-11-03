@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, FormEvent } from 'react';
-import { useFormStatus } from 'react-dom';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import type { User } from 'firebase/auth';
 import type { Job } from '@/lib/definitions';
 import { Upload, Send, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirebase } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes } from "firebase/storage";
 import { z } from 'zod';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -35,28 +35,18 @@ const initialState: FormState = {
   success: false,
 };
 
-// Helper to read file as Data URL
-const readFileAsDataURL = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-};
-
 export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpen: (open: boolean) => void }) {
   const [state, setState] = useState<FormState>(initialState);
   const [pending, setPending] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
-  const firestore = useFirestore();
+  const { firestore, firebaseApp } = useFirebase();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPending(true);
     setState(initialState);
     
-    if (!firestore) {
+    if (!firestore || !firebaseApp) {
       setState({ success: false, message: 'Database service is not available.', errors: null });
       setPending(false);
       return;
@@ -87,19 +77,22 @@ export function ApplyForm({ user, job, setOpen }: { user: User; job: Job; setOpe
     const { jobId, userId, name, email, phone, resume } = validatedFields.data;
 
     try {
-      // Read the resume file as a Data URL
-      const resumeUrl = await readFileAsDataURL(resume);
+      // 1. Upload resume to Firebase Storage
+      const storage = getStorage(firebaseApp);
+      const storagePath = `resumes/${userId}/${resume.name}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, resume);
 
+      // 2. Add candidate document to Firestore
       const candidatesCollection = collection(firestore, 'candidates');
-
       addDocumentNonBlocking(candidatesCollection, {
         jobId,
         userId,
         name,
         email,
         phone,
-        resumeUrl, // Store the Data URL in Firestore
-        skills: [], // Skills could be parsed from resume in a more advanced version
+        resumeUrl: storagePath, // Store the path to the file in Storage
+        skills: [],
         status: 'Applied',
         appliedAt: serverTimestamp(),
       });
